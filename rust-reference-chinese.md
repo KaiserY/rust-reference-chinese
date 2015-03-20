@@ -1,4 +1,4 @@
-# Rust参考手册
+# Rust 参考手册
 
 * [1.介绍](#Introduction)
 * [2.标记法](#Notation)
@@ -17,3 +17,4 @@
 你可能也对[语法](http://doc.rust-lang.org/grammar.html)感兴趣。
 
 ## <a name="Notation"></a>2.标记法
+Rust的语法定义在Unicode代码点之上，每个字符通常记作`U+XXXX`，由4个或更多十六进制整数`X`组成。大部分Rust

@@ -3,6 +3,7 @@
 * [1.介绍](#Introduction)
 * [2.标记法](#Notation)
   * [2.1.Unicode组合](#UnicodeProductions)
+  * [2.2.字符串表组合](#StringTableProductions)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -48,4 +49,5 @@ repeats : [ '*' | '+' ] NUMBER ? | NUMBER ? | '?' ;
 ### <a name="UnicodeProductions"></a>2.1.Unicode组合
 一些Rust语法中的组合允许Unicode代码点超越ASCII范围。我们根据Unicode标准指定的字符属性定义这些组合，而不是采用ASCII范围的代码点。[特殊Unicode组合](#UnicodeProductions)部分列出了这些组合。
 
-### 2.2.字符串表组合
+### <a name="StringTableProductions"></a>2.2.字符串表组合
+语法中的一些规则 - 特别的像[单目运算符](http://doc.rust-lang.org/reference.html#unary-operator-expressions)，[二进制运算符](http://doc.rust-lang.org/reference.html#binary-operator-expressions)和[关键字](http://doc.rust-lang.org/reference.html#keywords) - 表现为一种简单的形式：作为一串非引用，可打印的空白分隔的字符串表。

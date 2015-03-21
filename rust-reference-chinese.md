@@ -118,3 +118,26 @@ Rust程序中如果每个空白元素被替换任何其它空格元素时它们�
 simple_token : keyword | unop | binop ;
 token : simple_token | ident | literal | symbol | whitespace token ;
 ```
+
+记号是语法中的主要组合，使用正则（非递归）语言定义。“简单”记号采用[字符串表组合](#StringTableProductions)形式，并作为双引号引用的字符串出现在剩下的语法中。其它记号则有确定的规则。
+
+#### <a name="Keywords"></a>3.5.1.关键字
+
+|   |  |  |  |  |
+| ------------- | ------------- | ------------- | ------------- | ------------- |
+| abstract  | alignof  | as  | become  | box  |
+| break  | const  | continue  | crate  | do  |
+| else  | enum  | extern  | false  | final  |
+| fn  | for  | if  | impl  | in  |
+| let  | loop  | macro  | match  | mod  |
+| move  | mut  | offsetof  | override  | priv  |
+| pub  | pure  | ref  | return  | sizeof  |
+| static  | self  | struct  | super  | true  |
+| trait  | type  | typeof  | unsafe  | unsized  |
+| use  | virtual  | where  | while  | yield  |
+
+每个这些关键字在语法中有特殊含义，并且它们都排除`ident`规则之外。
+
+注意有些关键字是保留的，现在并没有意义。
+
+#### <a name="Literals"></a>3.5.2.常量

@@ -50,4 +50,71 @@ repeats : [ '*' | '+' ] NUMBER ? | NUMBER ? | '?' ;
 一些Rust语法中的组合允许Unicode代码点超越ASCII范围。我们根据Unicode标准指定的字符属性定义这些组合，而不是采用ASCII范围的代码点。[特殊Unicode组合](#UnicodeProductions)部分列出了这些组合。
 
 ### <a name="StringTableProductions"></a>2.2.字符串表组合
-语法中的一些规则 - 特别的像[单目运算符](http://doc.rust-lang.org/reference.html#unary-operator-expressions)，[二进制运算符](http://doc.rust-lang.org/reference.html#binary-operator-expressions)和[关键字](http://doc.rust-lang.org/reference.html#keywords) - 表现为一种简单的形式：作为一串非引用，可打印的空白分隔的字符串表。
+语法中的一些规则 - 特别的像[单目运算符](http://doc.rust-lang.org/reference.html#unary-operator-expressions)，[二进制运算符](http://doc.rust-lang.org/reference.html#binary-operator-expressions)和[关键字](http://doc.rust-lang.org/reference.html#keywords) - 表现为一种简单的形式：作为一串非引用，可打印的空白分隔的字符串表。这些例子是[记号](#Tokens)规则的子集，并假设为编译器的词法分析的结果，由一个DFA（确定有限状态自动机）驱动，通过分离所有这些字符串表入口执行。
+
+当语法中出现一个在双引号（`"`）中的字符串时，它是字符串表组合中的一个单独成员的隐式引用。查看[记号](#Tokens)以获取更多信息。
+
+## <a name="LexicalStructure"></a>3.词法结构
+
+### <a name="InputFormat"></a>3.1.输入格式
+Rust的输入被解释为一串UTF-8编码的Unicode代码点。大部分Rust语法规则根据ASCII范围的代码点定义，不过一小部分根据Unicode属性或显示代码点列表定义。
+
+### <a name="SpecialUnicodeProduction"></a>3.2.特殊Unicode组合
+Rust语法中的如下这些组合根据Unicode属性定义：`ident`，`non_null`，`non_star`，`non_eol`，`non_slash_or_star`，`non_single_quote`和`non_double_quote`。
+
+#### <a name="Identifiers"></a>3.2.1.标识符
+`ident`组合是如下形式的任何非空Unicode字符串：
+
+* 第一个字符拥有`XID_start`属性
+* 其它字符拥有`XID_continue`属性
+
+以上组合*不能*出现在[关键字](#Keywords)中。
+
+> **注意**：`XID_start`和`XID_continue`作为一个字符属性包含了用来组成更有名的C和JavaScript家族的标识符的字符集。
+
+#### <a name="DelimiterRestrictedProductions"></a>3.2.2.界定限制组合
+一些组合通过排除特定Unicode字符定义：
+
+* `non_null`是任何不是`U+0000`（null）的单个Unicode字符
+* `non_eol`是`non_null`排除`U+000A`（`\n`）
+* `non_star`是`non_null`排除`U+002A`（`*`）
+* `non_slash_or_star`是`non_null`排除`U+002F`（`/`）和`U+002A`（`*`）
+* `non_single_quote`是`non_null`排除`U+0027`（`'`）
+* `non_double_quote`是`non_null`排除`U+0022`（`"`）
+
+### <a name="Comments"></a>3.3.注释
+
+```
+comment : block_comment | line_comment ;
+block_comment : "/*" block_comment_body * "*/" ;
+block_comment_body : [block_comment | character] * ;
+line_comment : "//" non_eol * ;
+```
+
+Rust代码中的注释大体上遵循C++风格的行和块注释形式。嵌套块注释也被支持。
+
+行注释以正好*3*个斜杠开头，和块注释以在块开始处正好一个斜杠和两个星号开头（`/**`），它们被作为`doc`属性的一个特殊语法解析。这就是说，它们等同于在注释体周围写上`#[doc="..."]`（这包含了注释字符自身，也就是说`/// Foo`等同于`#[doc="/// Foo"]`）。
+
+`//!`注释适用于注释对象的父对象，而不是它之后的对象本身。`//!`注释通常用于在包装箱索引页显示信息。
+
+非文档注释被当作空白的形式解析。
+
+### <a name="Whitespace"></a>3.4.空白
+
+```
+whitespace_char : '\x20' | '\x09' | '\x0a' | '\x0d' ;
+whitespace : [ whitespace_char | comment ] + ;
+```
+
+`whitespace_char`组合是任何非空Unicode字符串包含任何下述Unicode字符：`U+0020`（空格，`' '`），`U+0009`（制表符，`'\t'`），`U+000A`（换行符，`'\n'`）和`U+000D`（回车，`'\r'`）。
+
+Rust是一个“自由形式”语言，这意味着任何形式的空格只用来分隔语法中的*记号*，并无语义意义。
+
+Rust程序中如果每个空白元素被替换任何其它空格元素时它们仍有相同的意义，比如一个单独的空格字符。
+
+### <a name="Tokens"></a>3.5.记号
+
+```
+simple_token : keyword | unop | binop ;
+token : simple_token | ident | literal | symbol | whitespace token ;
+```

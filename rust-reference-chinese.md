@@ -173,3 +173,56 @@ literal : [ string_lit | char_lit | byte_string_lit | byte_lit | num_lit ] lit_s
 |`\t`|制表符|
 |`\\`|反斜线|
 
+###### <a name="UnicodeEscapes"></a>3.5.2.1.3.Unicode转义
+
+|| 名称 |
+| -------- | ---------------------- |
+|`\u{7FFF}`|24位Unicode字符编码（最多6个数字）|
+
+###### <a name="Numbers"></a>3.5.2.1.4.数字
+
+| [数字常量](#NumberLiterals)`*` | 例子 | 幂 | 后缀 |
+| ------------- | ------------- | ------------- | ------------- |
+|十进制整数|`98_222`|`N/A`|整数后缀|
+|十六进制整数|`0xff`|`N/A`|整数后缀|
+|八进制整数|`0o77`|`N/A`|整数后缀|
+|二进制整数|`0b1111_0000`|`N/A`|整数后缀|
+|浮点数|`123.0E+77`|`Optional`|浮点后缀|
+
+`*`所有数字常量允许`_`作为可视分隔符：`1_234.0E+18f64`
+
+###### <a name="Suffixes"></a>3.5.2.1.5.后缀
+
+| 整数 | 浮点数 |
+| ---------------- | ------------- |
+|`u8`，`i8`，`u16`，`i16`，`u32`，`i32`，`u64`，`i64`，`is`（`isize`），`us`（`usize`）|`f32`，`f64`|
+
+##### <a name="CharacterAndStringLiterals"></a>3.5.2.2.字符和字符串常量
+
+```
+char_lit : '\x27' char_body '\x27' ;
+string_lit : '"' string_body * '"' | 'r' raw_string ;
+
+char_body : non_single_quote
+          | '\x5c' [ '\x27' | common_escape | unicode_escape ] ;
+
+string_body : non_double_quote
+            | '\x5c' [ '\x22' | common_escape | unicode_escape ] ;
+raw_string : '"' raw_string_body '"' | '#' raw_string '#' ;
+
+common_escape : '\x5c'
+              | 'n' | 'r' | 't' | '0'
+              | 'x' hex_digit 2
+
+unicode_escape : 'u' '{' hex_digit+ 6 '}';
+
+hex_digit : 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
+          | 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
+          | dec_digit ;
+oct_digit : '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' ;
+dec_digit : '0' | nonzero_dec ;
+nonzero_dec: '1' | '2' | '3' | '4'
+           | '5' | '6' | '7' | '8' | '9' ;
+```
+
+###### <a name="CharacterLiterals"></a>3.5.2.2.1.字符常量

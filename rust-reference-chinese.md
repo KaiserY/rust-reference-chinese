@@ -141,4 +141,35 @@ token : simple_token | ident | literal | symbol | whitespace token ;
 注意有些关键字是保留的，现在并没有意义。
 
 #### <a name="Literals"></a>3.5.2.常量
-常量是一个包含单独记号的表达式，而不是一串记号，它立即而直接的代表了它所
+常量是一个包含单独记号的表达式，而不是一串记号，它立即而直接的代表了它所赋的值，而不是通过名字引用或其它赋值规则。常量是一种形式的常表达式，所以它（主要）在编译时赋值。
+
+```
+lit_suffix : ident;
+literal : [ string_lit | char_lit | byte_string_lit | byte_lit | num_lit ] lit_suffix ?;
+```
+
+可选的后缀只对特定数字常量有效，不过它被未来的扩展保留，也就是说，上述给出了词法语法，不过Rust解析器会拒绝除了下面[数字常量](#NumberLiterals)中提到的12种特殊情况外的一切形式。
+
+##### <a name="Examples"></a>3.5.2.1.例子
+
+###### <a name="CharactersAndStrings"></a>3.5.2.1.1.字符和字符串
+
+|  | 例子 | `#`集合 | 字符集 | 转义 |
+| ------------- | ------------- | ------------- | ------------- | ------------- |
+|[字符](#CharacterLiterals)|`'H'`|`N/A`|所有Unicode|`\'`和[字节](#ByteEscapes)和[Unicode](#UnicodeEscapes)|
+|[字符串](#StringLiterals)|`"hello"`|`N/A`|所有Unicode|`\“`和[字节](#ByteEscapes)和[Unicode](#UnicodeEscapes)|
+|[原始字符串](#RawStringLiterals)|`r#"hello"#`|`0...`|所有Unicode|`N/A`|
+|[字节](#ByteLiterals)|`b'H'`|`N/A`|所有ASCII|`\'`和[字节](#ByteEscapes)|
+|[字节字符串](#ByteStringLiterals)|`b"hello"`|`N/A`|所有ASCII|`\“`和[字节](#ByteEscapes)|
+|[原始字节字符串](#RawByteStringLiterals)|`br#"hello"#`|`0...`|所有ASCII|`N/A`|
+
+####### <a name="ByteEscapes"></a>3.5.2.1.2.字节转义
+
+|| 名称 |
+| -------- | ---------------------- |
+|`\x7F`|8位字符编码（正好2个数字）|
+|`\n`|换行符|
+|`\r`|回车|
+|`\t`|制表符|
+|`\\`|反斜线|
+

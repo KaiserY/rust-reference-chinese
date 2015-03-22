@@ -141,3 +141,4 @@ token : simple_token | ident | literal | symbol | whitespace token ;
 注意有些关键字是保留的，现在并没有意义。
 
 #### <a name="Literals"></a>3.5.2.常量
+常量是一个包含单独记号的表达式，而不是一串记号，它立即而直接的代表了它所

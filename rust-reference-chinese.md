@@ -411,3 +411,93 @@ type_path_tail : '<' type_expr [ ',' type_expr ] + '>'
 x;
 x::y::z;
 ```
+
+路径部分通常是[标识符](#Identifiers)，不过路径的结尾部分可以是一个尖括号中的一系列参数。在[表达式](#Expressions)上下文中，在命名空间标识符中最后一个（`::`）后给出的参数列表是为了消除与另一个相关的使用小于号（`<`）的表达式的歧义。在类型表达式中，最后的命名空间标识符可以省略。
+
+两个带有类型参数的路径的例子：
+
+```rust
+type T = HashMap<i32,String>; // Type arguments used in a type expression
+let x  = id::<i32>(10);       // Type arguments used in a call expression
+```
+
+路径可以通过指明多种前置标识符来改变它解析的方式：
+
+* 以`::`开头的路径被认为是全局路径，路径的部分从包装箱根开始解析。路径中的每个标识符都必须被解析为一个项。
+
+```rust
+mod a {
+    pub fn foo() {}
+}
+mod b {
+    pub fn foo() {
+        ::a::foo(); // call a's foo function
+    }
+}
+```
+
+* 以`super`关键字开头的路径相对其父模块开始解析。其后的每个标识符都必须解析为一个项。
+
+```rsut
+mod a {
+    pub fn foo() {}
+}
+mod b {
+    pub fn foo() {
+        super::a::foo(); // call a's foo function
+    }
+}
+```
+
+以`self`关键字开头的路径相对当前模块开始解析。其后的每个标识符都必须解析为一个项。
+
+```rust
+fn foo() {}
+fn bar() {
+    self::foo();
+}
+```
+
+## <a name="SyntaxExtensions"></a>4.语法扩展
+一些Rust的小功能并未核心到足以拥有自己的语法，甚至没有被实现为函数，它们确实有名字，并用过一个一致的语法调用：`name!(...)`。例子包括：
+
+* `format!`：格式化数据为一个字符串
+* `env!`：在编译时寻找一个环境变量的值
+* `file!`：返回正在编译的文件的路径
+* `stringify!`：机智的打印作为参数的Rust表达式
+* `include!`：引用给定文件中的Rust表达式
+* `include_str!`：引用给定文件中的内容作为一个字符串
+* `include_bytes!`：引用给定文件中的内容作为一个二进制对象
+* `error!`，`warn!`，`info!`，`debug!`：提供诊断信息
+
+上述所有的扩展均是带有值的表达式。
+
+`rustc`的使用者可以通过两种方法定义新的语法：
+
+* [编译器插件](http://doc.rust-lang.org/book/plugins.html)可以引入任意的Rust代码在编译时
+* [宏](http://doc.rust-lang.org/book/macros.html)可以通过一个高级的，声明式的方式定义新语法
+
+### <a name="Macros"></a>4.1.宏
+
+```
+expr_macro_rules : "macro_rules" '!' ident '(' macro_rule * ')' ;
+macro_rule : '(' matcher * ')' "=>" '(' transcriber * ')' ';' ;
+matcher : '(' matcher * ')' | '[' matcher * ']'
+        | '{' matcher * '}' | '$' ident ':' ident
+        | '$' '(' matcher * ')' sep_token? [ '*' | '+' ]
+        | non_special_token ;
+transcriber : '(' transcriber * ')' | '[' transcriber * ']'
+            | '{' transcriber * '}' | '$' ident
+            | '$' '(' transcriber * ')' sep_token? [ '*' | '+' ]
+            | non_special_token ;
+```
+
+`macro_rules`允许你以声明的方式定义语法扩展。我们叫这种扩展“示例宏”或者简单的“宏” -- 来与[编译器插件](http://doc.rust-lang.org/book/plugins.html)中的“宏过程”相区别。
+
+目前，宏可以扩展为表达式，语句，项，或者模式。
+
+（一个`sep_token`是任何不是`*`和`+`的记号。一个`non_special_token`是任何不是分隔符或`$`的记号。）
+
+宏扩展器通过名字寻找宏调用，并轮流尝试每一种宏规则。它改写第一个成功的匹配。匹配和改写非常相关，所以我们会一起描述它们。
+
+#### <a name="MacroByExample"></a>4.1.1.示例宏

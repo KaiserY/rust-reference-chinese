@@ -517,4 +517,33 @@ transcriber : '(' transcriber * ')' | '[' transcriber * ']'
 宏系统使用的解析器是相当的强大，不过Rust语法的解析被限制为如下两种方式：
 
 1. 解析器会尽可能多的解析。如果它尝试将`$i:expr [ , ]`和`8 [ , ]`匹配，它会尝试解析`i`为一个数组索引操作并失败。增加一个分隔符可以解决这个问题。
-2. 解析器消除所有的歧义当它到达一个`$`*名字*`:`*指示符*时。
+2. 解析器消除所有的歧义当它到达一个`$`*名字*`:`*指示符*时。这个要求大多影响出现在一个`$(...)*`的开头或者之后的名字-指示符对；在之前增加一个不同的记号可以解决这个问题。
+
+### <a name="SyntaxExtensionsUsefulInMacros"></a>4.2.宏中有用的语法扩展
+
+* `stringify!`：将标识符参数转换为字符串常量
+* `concat!`：连接一个逗号分隔的常量列表
+
+### <a name="SyntaxExtensionsForMacroDebugging"></a>4.3.宏调试的语法扩展
+
+* `log_syntax!`：在编译时打印出参数
+* `trace_macros!`：传递`true`或`false`来启用和禁用宏扩展日志
+
+### <a name="Quasiquoting"></a>4.4.准引用
+如下的宏扩展被用来准引用Rust语法树，通常用在[宏过程](http://doc.rust-lang.org/book/plugins.html#syntax-extensions)中：
+
+* `quote_expr!`
+* `quote_item!`
+* `quote_pat!`
+* `quote_stmt!`
+* `quote_tokens!`
+* `quote_matcher!`
+* `quote_ty!`
+* `quote_attr!`
+
+记住当`$name : ident`出现在`quote_tokens!`的输入中，结果包含后跟两个记号的解引用的`name`。然而，向`quote_matcher!`传递相同形式的参数则会变成准引用的非终结符的MBE匹配器。并没有发生解引用。否则`quote_matcher!`和`quote_tokens!`的结果是相似的。
+
+目前阶段文档非常有限。
+
+## <a name="CratesAndSourceFiles"></a>5.包装箱和源文件
+Rust是一个*编译型*语言。它的语义遵循一个在编译时和运行时之间的**（*phase distinction*）

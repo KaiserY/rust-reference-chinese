@@ -20,6 +20,29 @@
         * [3.5.2.1.3.Unicode转义](#UnicodeEscapes)
         * [3.5.2.1.4.数字](#Numbers)
         * [3.5.2.1.5.后缀](#Suffixes)
+      * [3.5.2.2.字符和字符串常量](#CharacterAndStringLiterals)
+        * [3.5.2.3.1.字节常量](#CharacterLiterals)
+        * [3.5.2.2.2.字符串常量](#StringLiterals)
+        * [3.5.2.2.3.字符转义](#CharacterEscapes)
+        * [3.5.2.2.4.原始字符串常量](#RawStringLiterals)
+      * [3.5.2.3.字节和字节字符串常量](#ByteAndByteStringLiterals)
+        * [3.5.2.3.1.字节常量](#ByteLiterals)
+        * [3.5.2.3.2.字节字符串常量](#ByteStringLiterals)
+        * [3.5.2.3.3.原始字节字符串常量](#RawByteStringLiterals)
+      * [3.5.2.4.数字常量](#NumberLiterals)
+        * [3.5.2.4.1.整形常量](#IntegerLiterals)
+        * [3.5.2.4.2.浮点常量](#FloatingPointLiterals)
+      * [3.5.2.5.布尔常量](#BooleanLiterals)
+  * [3.6.路径](#Paths)
+* [4.语法扩展](#SyntaxExtensions)
+  * [4.1.宏](#Macros)
+    * [4.1.1.示例宏](#MacroByExample)
+    * [4.1.2.解析限制](#ParsingLimitations)
+  * [4.2.宏中有用的语法扩展](#SyntaxExtensionsUsefulInMacros)
+  * [4.3.宏调试的语法扩展](#SyntaxExtensionsForMacroDebugging)
+  * [4.4.准引用](#Quasiquoting)
+* [5.包装箱和源文件](#CratesAndSourceFiles)
+* [6.项和属性](#ItemsAndAttributes)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -370,7 +393,7 @@ dec_lit : [ dec_digit | '_' ] + ;
 0usize;                            // type usize
 ```
 
-###### <a name="Floating-pointLiterals"></a>3.5.2.4.2.浮点常量
+###### <a name="FloatingPointLiterals"></a>3.5.2.4.2.浮点常量
 一个浮点常量有如下两种形式的一种：
 
 * 一个*十进制常量*后跟一个句号字符`U+002E`（`.`）。它可以后跟另一个十进制常量，和一个可选的*指数*

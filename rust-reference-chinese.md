@@ -4,6 +4,22 @@
 * [2.标记法](#Notation)
   * [2.1.Unicode组合](#UnicodeProductions)
   * [2.2.字符串表组合](#StringTableProductions)
+* [3.词法结构](#LexicalStructure)
+  * [3.1.输入格式](#InputFormat)
+  * [3.2.特殊Unicode组合](#SpecialUnicodeProduction)
+    * [3.2.1.标识符](#Identifiers)
+    * [3.2.2.界定限制组合](#DelimiterRestrictedProductions)
+  * [3.3.注释](#Comments)
+  * [3.4.空白](#Whitespace)
+  * [3.5.记号](#Tokens)
+    * [3.5.1.关键字](#Keywords)
+    * [3.5.2.常量](#Literals)
+      * [3.5.2.1.例子](#Examples)
+        * [3.5.2.1.1.字符和字符串](#CharactersAndStrings)
+        * [3.5.2.1.2.字节转义](#ByteEscapes)
+        * [3.5.2.1.3.Unicode转义](#UnicodeEscapes)
+        * [3.5.2.1.4.数字](#Numbers)
+        * [3.5.2.1.5.后缀](#Suffixes)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -552,3 +568,23 @@ Rust是一个*编译型*语言。它的语义遵循一个在编译时和运行�
 
 一个包装箱是一个编译和链接，同时也是版本控制，发布和运行时加载的单位。一个包装箱包含一个嵌套[模块](#Modules)作用域的树。树的顶层是一个匿名（从模块内路径的角度来看）模块并且包装箱内的每一个项都有一个代表它在包装箱模块树中位置的严格的[模块路径](Paths)。
 
+Rust编译器总是接收一个单独的源文件作为输入，并总是产生一个单独的包装箱输出。对源文件的处理可能导致其它源文件被作为模块载入。源文件的后缀是`.rs`。
+
+一个Rust源文件描述了一个模块，它的名字和它在当前包装箱中模块树的位置则在源文件之外定义：要么通过一个在引用的源文件中的`mod_item`显式定义，或者使用包装箱自己的名字。
+
+每个源文件包括0个或多个`item`定义，并可选任定义意数量适用于它包含模块的`attribute`。匿名包装箱定义的属性对影响编译器的行为提供了重要的元数据。
+
+```rust
+// Crate name
+#![crate_name = "projx"]
+
+// Specify the output type
+#![crate_type = "lib"]
+
+// Turn on a warning
+#![warn(non_camel_case_types)]
+```
+
+一个包含`main`函数的包装箱可以被编译为一个可执行文件。如果`main`出现，它的返回值必须是`unit`并且不接收任何参数。
+
+## <a name="ItemsAndAttributes"></a>6.项和属性

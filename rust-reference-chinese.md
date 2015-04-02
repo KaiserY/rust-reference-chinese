@@ -46,6 +46,7 @@
   * [6.1.项](#Items)
     * [6.1.1.类型参数](#TypeParameters)
     * [6.1.2.模块](#Modules)
+      * [6.1.2.0.1.外部包装箱声明](#ExternCrateDeclarations)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -655,4 +656,55 @@ mod : item * ;
 
 一个模块是一个0个或多个[项](#Items)的容器。
 
-一个*模块项*是一个模块，包含在一个大括号中，被命名的，前缀`mod`关键字。
+一个*模块项*是一个模块，包含在一个大括号中，被命名的，前缀`mod`关键字。一个模块项引入了一个新的，命名了的模块到组成包装箱的模块树中。模块可以任意嵌套。
+
+一个模块的例子：
+
+```rust
+mod math {
+    type Complex = (f64, f64);
+    fn sin(f: f64) -> f64 {
+        /* ... */
+    }
+    fn cos(f: f64) -> f64 {
+        /* ... */
+    }
+    fn tan(f: f64) -> f64 {
+        /* ... */
+    }
+}
+```
+
+模块和类型分享相同的命名空间。在同一作用域中定义一个与模块相同名字的类型是不允许的：这就是说，一个类型定义，特性，结构体，或者类型参数不能覆盖作用域中的模块的名字，反之也不行。
+
+一个没有体的模块从一个外部文件加载，默认它与模块有相同的名字，加上`.rs`扩展名。当一个嵌套的子模块从一个外部文件加载时，它从镜像于模块层次的子目录中加载。
+
+```rust
+// Load the `vec` module from `vec.rs`
+mod vec;
+
+mod thread {
+    // Load the `local_data` module from `thread/local_data.rs`
+    mod local_data;
+}
+```
+
+用于加载外部文件模块的目录和文件可被`path`属相影响。
+
+```rust
+#[path = "thread_files"]
+mod thread {
+    // Load the `local_data` module from `thread_files/tls.rs`
+    #[path = "tls.rs"]
+    mod local_data;
+}
+```
+
+###### <a name="ExternCrateDeclarations"></a>6.1.2.0.1.外部包装箱声明
+
+```
+extern_crate_decl : "extern" "crate" crate_name
+crate_name: ident | ( string_lit "as" ident )
+```
+
+一个*`extern crate`声明*指定了一个外部包装箱的依赖。

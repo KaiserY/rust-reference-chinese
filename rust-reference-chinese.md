@@ -43,6 +43,9 @@
   * [4.4.准引用](#Quasiquoting)
 * [5.包装箱和源文件](#CratesAndSourceFiles)
 * [6.项和属性](#ItemsAndAttributes)
+  * [6.1.项](#Items)
+    * [6.1.1.类型参数](#TypeParameters)
+    * [6.1.2.模块](#Modules)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -611,3 +614,45 @@ Rust编译器总是接收一个单独的源文件作为输入，并总是产生�
 一个包含`main`函数的包装箱可以被编译为一个可执行文件。如果`main`出现，它的返回值必须是`unit`并且不接收任何参数。
 
 ## <a name="ItemsAndAttributes"></a>6.项和属性
+包装箱包含[项](#Items)，它们每一个都可能附加一些[属性](#Attributes)。
+
+### <a name="Items"></a>6.1.项
+
+```
+item : extern_crate_decl | use_decl | mod_item | fn_item | type_item
+     | struct_item | enum_item | static_item | trait_item | impl_item
+     | extern_block ;
+```
+
+一个`项`是包装箱的一部分。项在包装箱中被组织为一个嵌套的[模块](#Modules)集。每个包装箱都一个一个单独的“最外层”的匿名模块；所有其它包装箱中的项都有在包装箱中的模块树中的[路径](#Paths)。
+
+项全部在编译时被确定，大部分在执行期间保持不变，并被储存在只读内存中。
+
+这有几种类型的项：
+
+* [`extern crate`声明](#ExternCrateDeclarations)
+* [`use`声明](#UseDeclarations)
+* [模块](#Modules)
+* [函数](#Functions)
+* [类型定义](#TypeDefinitions)
+* [结构体](#Structures)
+* [枚举](#Enumerations)
+* [静态项](#StaticItems)
+* [特性](#Traits)
+* [实现](#Implementations)
+
+一些项组成了一个隐式的定义子项的作用域。换句话说，在一个函数或模块中，项的定义可以（在多种情况下）与语句，控制块，和组成了项体的类似结构。这些范围内的项与定义在作用域外声明的项是一样的--它仍是一个静态项--除了那些位于模块命名空间中的*路径名称*由包含其中的项的名字定义的项，或者是其包含的私有项（对于函数来说）。
+
+#### <a name="TypeParameters"></a>6.1.1.类型参数
+除了模块外的所有项都能被类型参数化。类型参数通过一个逗号分隔的包含在尖括号（`<...>`）中的标识符列表给出，位于项定义中项名称之后，并不作为项类型的一部分。在实践中，类型推断系统通常可以从上下文汇总推断出参数类型。这是因为，Rust没有类型抽象的概念：这里并没有一等的“代表所有”的类型。
+
+#### <a name="Modules"></a>6.1.2.模块
+
+```
+mod_item : "mod" ident ( ';' | '{' mod '}' );
+mod : item * ;
+```
+
+一个模块是一个0个或多个[项](#Items)的容器。
+
+一个*模块项*是一个模块，包含在一个大括号中，被命名的，前缀`mod`关键字。

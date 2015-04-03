@@ -48,6 +48,8 @@
     * [6.1.2.模块](#Modules)
       * [6.1.2.0.1.`extern crate`声明](#ExternCrateDeclarations)
       * [6.1.2.0.2.`use`声明](#UseDeclarations)
+    * [6.1.3.函数](#Functions)
+      * [6.1.3.1.泛型函数](#GenericFunctions)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -741,4 +743,97 @@ path_item : ident | "self" ;
 
 `use`声明支持一系列的方便的简写：
 
-* 
+* 重绑定目标名称为一个新的本地名称，使用`use p::q::r as x;`语法
+* 同时绑定一系列的只有最后一个元素不同的路径，使用大括号语法`use a::b::{c,d,e,f};`
+* 绑定所有匹配一个给定前缀的所有路径，使用星号通配符语法`use a::b::*;`
+* 同时绑定一系列的只有最后一个元素不同的路径和它们的直系父模块，使用`self`关键字，例如`use a::b::{self, c, d};`
+
+一个`use`声明的例子：
+
+```rust
+use std::option::Option::{Some, None};
+use std::collections::hash_map::{self, HashMap};
+
+fn foo<T>(_: T){}
+fn bar(map1: HashMap<String, usize>, map2: hash_map::HashMap<String, usize>){}
+
+fn main() {
+    // Equivalent to 'foo(vec![std::option::Option::Some(1.0f64),
+    // std::option::Option::None]);'
+    foo(vec![Some(1.0f64), None]);
+
+    // Both `hash_map` and `HashMap` are in scope.
+    let map1 = HashMap::new();
+    let map2 = hash_map::HashMap::new();
+    bar(map1, map2);
+}
+```
+
+就像项一样，`use`声明对包含它的模块默认是私有的。同时也像项一样，`use`声明可以是公有的，它使用`pub`关键字。这样的一个`use`声明用来*重导出*名称。因此一公有的`use`声明可以*重定向*一些公有名称到一个不同的目标定义中：甚至是一个位于不同模块中的严格私有的路径。如果一系列这样的重定向组成了一个环或者不能无二义的解析，它们会展示出一个编译时错误。
+
+一个重导出的例子：
+
+```rust
+mod quux {
+    pub use quux::foo::{bar, baz};
+
+    pub mod foo {
+        pub fn bar() { }
+        pub fn baz() { }
+    }
+}
+```
+
+在这个例子中，模块`quux`重导出了两个定义在`foo`中的公有名称。
+
+另外注意`use`项中的路径是相对与包装箱根的。所以，在之前的例子中，`use`指的是`quux::foo::{bar, baz}`，而不是简单的`foo::{bar, baz}`。这也意味着顶级模块定义需要位于包装箱根，如果你想要直接使用`use`项中定义的模块。也可以在`use`项的开头使用`self`和`super`来分别引用当前和直接父模块。所有在`use`声明中访问声明模块的规则同样适用于模块定义和`extern crate`声明。
+
+一个什么可以和什么不可以使用`use`项的例子：
+
+```rust
+use foo::core::iter;  // good: foo is at the root of the crate
+use foo::baz::foobaz;    // good: foo is at the root of the crate
+
+mod foo {
+    extern crate core;
+
+    use foo::core::iter; // good: foo is at crate root
+//  use core::iter;      // bad:  core is not at the crate root
+    use self::baz::foobaz;  // good: self refers to module 'foo'
+    use foo::bar::foobar;   // good: foo is at crate root
+
+    pub mod bar {
+        pub fn foobar() { }
+    }
+
+    pub mod baz {
+        use super::bar::foobar; // good: super refers to module 'foo'
+        pub fn foobaz() { }
+    }
+}
+
+fn main() {}
+```
+
+#### <a name="Functions"></a>6.1.3.函数
+一个*函数项*定义了一系列[语句](#Statements)和一个可选的位于末尾的[表达式](#Expressions)，和一个名称和一个参数集合。函数使用`fn`关键字定义。函数定义了一个输入[位置](#MemorySlots)的集合作为参数，通过调用者像函数传递参数，和一个由函数传回给调用者的输出[位置](#MemorySlots)。
+
+一个函数也可以被拷贝到一个第一等级类型值中，这时它拥有响应的[函数类型](#FunctionTypes)，也可以被作为一个函数项使用（带有间接调用函数的额外开销）。
+
+每一个函数的控制路径逻辑上以一个`return`表达式或一个发散表达式结尾。如果函数最外层块的最后有一个产生值得表达式，这个表达式被翻译为一个隐式的`return`表达式最为最后的表达式。
+
+一个函数的例子：
+
+```rust
+fn add(x: i32, y: i32) -> i32 {
+    return x + y;
+}
+```
+
+就像`let`绑定一样，函数参数是确定模式的，所以任何在`let`绑定中有效的模式在参数中也有效。
+
+```rust
+fn first((value, _): (i32, i32)) -> i32 { value }
+```
+
+##### <a name="GenericFunctions"></a>6.1.3.1.泛型函数

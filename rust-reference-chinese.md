@@ -50,6 +50,9 @@
       * [6.1.2.0.2.`use`声明](#UseDeclarations)
     * [6.1.3.函数](#Functions)
       * [6.1.3.1.泛型函数](#GenericFunctions)
+      * [6.1.3.2.不安全性](#Unsafety)
+        * [6.1.3.2.1不安全函数](#UnsafeFunctions)
+        * [6.1.3.2.2.不安全块](#UnsafeBlocks)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -873,4 +876,9 @@ fn id<T>(x: T) -> T { x }
 * 读写一个[可变静态变量](#MutableStatics)
 * 调用一个不安全函数（包括一个固有功能或外部语言函数）
 
-###### 6.1.3.2.1不安全函数
+###### <a name="UnsafeFunctions"></a>6.1.3.2.1不安全函数
+不安全函数是指那些不是在所有上下文中或对所有可能的输入都安全的函数。这个函数必须带上`unsafe`前缀并且只能被一个`unsafe`块或另一个`unsafe`函数调用。
+
+###### <a name="UnsafeBlocks"></a>6.1.3.2.2.不安全块
+一个代码块可以带上`unsafe`关键字前缀，来允许调用`unsafe`函数或解引用一个在安全函数中的裸指针。
+

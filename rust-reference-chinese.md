@@ -46,7 +46,8 @@
   * [6.1.项](#Items)
     * [6.1.1.类型参数](#TypeParameters)
     * [6.1.2.模块](#Modules)
-      * [6.1.2.0.1.外部包装箱声明](#ExternCrateDeclarations)
+      * [6.1.2.0.1.`extern crate`声明](#ExternCrateDeclarations)
+      * [6.1.2.0.2.`use`声明](#UseDeclarations)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -700,11 +701,44 @@ mod thread {
 }
 ```
 
-###### <a name="ExternCrateDeclarations"></a>6.1.2.0.1.外部包装箱声明
+###### <a name="ExternCrateDeclarations"></a>6.1.2.0.1.`extern crate`声明
 
 ```
 extern_crate_decl : "extern" "crate" crate_name
 crate_name: ident | ( string_lit "as" ident )
 ```
 
-一个*`extern crate`声明*指定了一个外部包装箱的依赖。
+一个*`extern crate`声明*指定了一个外部包装箱的依赖。接着外部包装箱被绑定在定义为由`extern_crate_decl`提供的`ident`的作用域中。
+
+外部包装箱在编译时被解析为一个特定的`soname`，而一个运行时链接要求`soname`在运行时被传递给连接器用于加载。`soname`在运行时解析，通过扫描编译器的库路径和匹配由外部包装箱在编译时的`crateid`属性中的字符串常量提供的可选的`crateid`，假设存在一个默认的等于`extern_crate_decl`中提供的`ident`的`name`属性。
+
+3个`extern crate`声明的例子：
+
+```
+extern crate pcre;
+
+extern crate std; // equivalent to: extern crate std as std;
+
+extern crate "std" as ruststd; // linking to 'std' under another name
+```
+
+###### <a name="UseDeclarations"></a>6.1.2.0.2.`use`声明
+
+```
+use_decl : "pub" ? "use" [ path "as" ident
+                          | path_glob ] ;
+
+path_glob : ident [ "::" [ path_glob
+                          | '*' ] ] ?
+          | '{' path_item [ ',' path_item ] * '}' ;
+
+path_item : ident | "self" ;
+```
+
+一个*use声明*创建了1个或多个与一些其它[路径](#Paths)同义的本地名字。通常`use`声明被用来缩短用来引用一个模块项的路径。这些定义可以出现在[模块](#Modules)或[代码块](#Blocks)的顶部。
+
+> **注意**：不像许多语言，Rust中的`use`声明*并不*声明外部包装箱的链接依赖。相反[`extern crate`声明](#ExternCrateDeclarations)声明链接依赖。
+
+`use`声明支持一系列的方便的简写：
+
+* 

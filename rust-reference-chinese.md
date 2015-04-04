@@ -56,6 +56,8 @@
         * [6.1.3.2.3.被认为是未定义的行为](#BehaviorConsideredUndefined)
         * [6.1.3.2.4.不认为是不安全的行为](#BehaviourNotConsideredUnsafe)
       * [6.1.3.3.发散函数](#DivergingFunctions)
+      * [6.1.3.4.外部（语言）函数](#ExternFunctions)
+    * [6.1.4.类型别名](#TypeAliases)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -924,3 +926,49 @@ Rust的类型系统是动态安全要求的一个保守估计，所以在一些�
 * 有符号数溢出（明确定义为二进制补码包裹）
 
 ##### <a name="DivergingFunctions"></a>6.1.3.3.发散函数
+可以在一般输出值的位置写一个`!`字符来定义一种特殊类型的函数。例如：
+
+```rust
+fn my_err(s: &str) -> ! {
+    println!("{}", s);
+    panic!();
+}
+```
+
+我们称这类函数是“发散”的因为它们永远也不会向调用者返回一个值。发散函数中的每一个控制路径都必须以`panic!()`结尾或调用另一个发散函数。`!`标记并*不*代表一个类型。
+
+正如上面提到的定义一个函数可以是有用的，因为类型检查器会检查每一个控制路径是否以一个`return`或发散函数结尾。所以，如果`my_err`没有使用`!`定义，下面的代码将不能通过类型检查：
+
+```rust
+fn f(i: i32) -> i32 {
+   if i == 42 {
+     return 42;
+   }
+   else {
+     my_err("Bad number!");
+   }
+}
+```
+
+如果`my_err`没有使用`!`标记上面的代码将不会编译，因为条件选择的`else`分支不会返回一个`i32`，这是`f`签名所要求的。`my_err`添加的`!`标记告诉类型检查器，对于任何进入`my_err`的控制流，`f`不应该进行进一步的类型判断，因为依赖这个判断的上下文的控制流将不会继续。因此`f`的返回值只需要考虑`if`分支的情况。
+
+##### <a name="ExternFunctions"></a>6.1.3.4.外部（语言）函数
+外部函数是Rust FFI（外部语言接口）的一部分，提供与[外部块](#ExternalBlocks)相对的功能。外部块允许Rust代码调用其它语言代码，Rust代码中定义的带有函数体的外部函数*可以被其它语言调用*。它们与任何其它Rust函数一样的方式被定义，除了它们带有`extern`修饰符。
+
+```rust
+// Declares an extern fn, the ABI defaults to "C"
+extern fn new_i32() -> i32 { 0 }
+
+// Declares an extern fn with "stdcall" ABI
+extern "stdcall" fn new_i32_stdcall() -> i32 { 0 }
+```
+
+不像正常的函数，外部函数是`extern "ABI" fn()`类型的。这个与上面的定义在外部块中函数有相同的类型。
+
+```rust
+let fptr: extern "C" fn() -> i32 = new_i32;
+```
+
+外部函数可以直接在Rust代码中被调用因为Rust使用像C语言一样的大而相邻的栈段。
+
+#### <a name="TypeAliases"></a>6.1.4.类型别名

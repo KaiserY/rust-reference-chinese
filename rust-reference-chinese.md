@@ -53,6 +53,9 @@
       * [6.1.3.2.不安全性](#Unsafety)
         * [6.1.3.2.1不安全函数](#UnsafeFunctions)
         * [6.1.3.2.2.不安全块](#UnsafeBlocks)
+        * [6.1.3.2.3.被认为是未定义的行为](#BehaviorConsideredUndefined)
+        * [6.1.3.2.4.不认为是不安全的行为](#BehaviourNotConsideredUnsafe)
+      * [6.1.3.3.发散函数](#DivergingFunctions)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -882,3 +885,42 @@ fn id<T>(x: T) -> T { x }
 ###### <a name="UnsafeBlocks"></a>6.1.3.2.2.不安全块
 一个代码块可以带上`unsafe`关键字前缀，来允许调用`unsafe`函数或解引用一个在安全函数中的裸指针。
 
+当一个程序猿有足够的信心认为一系列潜在的不安全操作实际上是安全的，它们将这些（作为一个整体）代码包含在一个`unsafe`块中。编译器会考虑安全的使用这些代码，在当前的上下文中。
+
+不安全块常被用来封装外部语言库，直接使用硬件或实现并不直接出现在语言中的功能。例如，Rust提供了实现内存安全并发所需要的语言功能不过线程和消息传递的实现位于标准库中。
+
+Rust的类型系统是动态安全要求的一个保守估计，所以在一些情况下使用安全代码会带来性能开销。例如，一个双向链表不是一个树结构并且只能在安全代码中表现引用计数的指针。通过使用`unsafe`块来使用裸指针来表现可逆链表，它可以只使用装箱实现。
+
+###### <a name="BehaviorConsideredUndefined"></a>6.1.3.2.3.被认为是未定义的行为
+下面是一系列在所有Rust代码中都被禁止的行为，包括在`unsafe`块和`unsafe`函数中。类型检查提供了这些问题绝不会出现在安全代码中的保证。
+
+* 数据竞争
+* 解引用一个空/悬垂指针
+* 读取[undef](http://llvm.org/docs/LangRef.html#undefined-values)（未初始化）内存
+* 使用裸指针时打破[指针混淆规则](http://llvm.org/docs/LangRef.html#pointer-aliasing-rules)（C使用的规则的子集）
+* `&mut`和`&`遵循LLVM的范围[noalias](http://llvm.org/docs/LangRef.html#noalias)模型，除非如果`&T`包含一个`UnsafeCell<U>`的话。不安全代码不能违反这些别名保证
+* 不使用`UnsafeCell<U>`改变一个不可变值/引用
+* 通过编译器固有功能调用未定义行为：
+  * 使用`std::ptr::offset`（`offset`功能）来索引超过一个对象边界的值，除了结尾后一个字节的例外，它是被允许的
+  * 在重叠的缓冲区上使用`std::ptr::copy_nonoverlapping_memory`（`memcpy32/memcpy64`功能）
+* 基本类型的无效值，即便是在私有字段/本地变量中：
+  * 悬垂/空引用或装箱
+  * 在`bool`中一个不是`false`（`0`）或`true`（`1`）的值
+  * 一个`enum`不包含类型定义的判别式
+  * 在`char`中一个等于或大于`char::MAX`的值
+  * 在`str`中的非UTF-8字节序列
+* 在Rust中展开外部语言代码或者在其它语言中展开Rust代码。Rust的异常系统与其它语言中的异常处理并不兼容。展开必须在FFI内被捕获和处理
+
+###### <a name="BehaviourNotConsideredUnsafe"></a>6.1.3.2.4.不认为是不安全的行为
+下面是一系列在Rust中不认为是*不安全*的行为，不过它们可能不是你想要的。
+
+* 死锁
+* 从私有字段（`std::repr`）读取数据
+* 由于引用计数循环引起的泄漏，即便在全局堆中
+* 退出但未执行析构函数
+* 发送信号
+* 访问/修改文件系统
+* 无符号数溢出（明确定义为包裹）
+* 有符号数溢出（明确定义为二进制补码包裹）
+
+##### <a name="DivergingFunctions"></a>6.1.3.3.发散函数

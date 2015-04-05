@@ -58,6 +58,10 @@
       * [6.1.3.3.发散函数](#DivergingFunctions)
       * [6.1.3.4.外部（语言）函数](#ExternFunctions)
     * [6.1.4.类型别名](#TypeAliases)
+    * [6.1.5.结构体](#Structures)
+    * [6.1.6.枚举](#Enumerations)
+    * [6.1.7.常量项](#ConstantItems)
+    * [6.1.8.静态项](#StaticTtems)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -980,4 +984,124 @@ let fptr: extern "C" fn() -> i32 = new_i32;
 * 访问值所需的内存操作序列
 * 类型的[种类](#TypeKinds)
 
-例如，`(u8, u8)`定义了
+例如，`(u8, u8)`定义了一对不可变值的集合，它们每一个都包含可通过模式匹配访问的两个8位无符号整形，并且在内存中`x`部分位于`y`部分之前：
+
+```rust
+type Point = (u8, u8);
+let p: Point = (41, 68);
+```
+
+#### <a name="Structures"></a>6.1.5.结构体
+一个*结构体*是一个使用`struct`关键字定义的[结构体类型](#StructureTypes)。
+
+一个`struct`项和它的应用的例子：
+
+```rust
+struct Point {x: i32, y: i32}
+let p = Point {x: 10, y: 11};
+let px: i32 = p.x;
+```
+
+一个*元组结构体*是一个名义上的[元组类型](#TupleTypes)，它也使用`struct`关键字定义。例如：
+
+```rust
+struct Point(i32, i32);
+let p = Point(10, 11);
+let px: i32 = match p { Point(x, _) => x };
+```
+
+一个*类单元结构体*是一个没有任何字段的结构体，通过整个忽略字段列表来定义。这样的类型会有一个单独的值，就像单元类型的`()`一样。例如：
+
+```rust
+struct Cookie;
+let c = [Cookie, Cookie, Cookie, Cookie];
+```
+
+一个结构体准确的内存布局并未指定。你可以使用[`repr`属性](#FFIAttributes)来指定一个特定的布局。
+
+#### <a name="Enumerations"></a>6.1.6.枚举
+一个*枚举*既是一个名义上[枚举类型](#EnumeratedTypes)的定义也是一个*构造函数*的集合，它可以被用来创建和模式匹配相应的枚举类型值。
+
+枚举使用`enum`关键字定义。
+
+一个`enum`和它应用的例子：
+
+```rust
+enum Animal {
+  Dog,
+  Cat
+}
+
+let mut a: Animal = Animal::Dog;
+a = Animal::Cat;
+```
+
+枚举构造函数可以有命名了的和未命名的字段：
+
+```rust
+enum Animal {
+    Dog (String, f64),
+    Cat { name: String, weight: f64 }
+}
+
+let mut a: Animal = Animal::Dog("Cocoa".to_string(), 37.2);
+a = Animal::Cat { name: "Spotty".to_string(), weight: 2.7 };
+```
+
+在这个例子中，`Cat`是一个*类结构体枚举变量*，而`Dog`是被简单的叫做一个枚举变量。
+
+枚举有一个判别式，你可以显示的指定它：
+
+```rust
+enum Foo {
+    Bar = 123,
+}
+```
+
+如果你未赋值，它们会从`0`开始，并按顺序每一个变量加一。
+
+你可以强转一个枚举来获得它的值：
+
+```rust
+let x = Foo::Bar as u32; // x is now 123u32
+```
+
+这只在没有任何变量附加了一个值的情况下有效。如果是`Bar(i32)`的话，这是不被允许的。
+
+#### <a name="ConstantItems"></a>6.1.7.常量项
+
+```
+const_item : "const" ident ':' type '=' expr ';' ;
+```
+
+一个*常量项*是一个*命名了的常量值*，它并不代表程序中一个特定的内存位置。常量本质上会在被使用时内联，这意味着它们在被使用时会被直接拷贝到相对的上下文中。对同一常量的引用不一定能确保引用了相同的内存地址。
+
+常量值必须没有析构函数，并且因此接受大部分形式的数据。常量可能引用了其它常量的地址，这种情况下这个地址将拥有`static`生命周期。编译器，然而，仍有多次转换常量的自由，所以引用地址可能并不稳定。
+
+常量必须被显示指定类型。类型可以是`bool`，`char`，一个数字，或者由这些基本类型衍生出的类型。衍生类型是`static`生命周期的引用，定长数组，元组，枚举变量，和结构体。
+
+```rust
+const BIT1: u32 = 1 << 0;
+const BIT2: u32 = 1 << 1;
+
+const BITS: [u32; 2] = [BIT1, BIT2];
+const STRING: &'static str = "bitstring";
+
+struct BitsNStrings<'a> {
+    mybits: [u32; 2],
+    mystring: &'a str
+}
+
+const BITS_N_STRINGS: BitsNStrings<'static> = BitsNStrings {
+    mybits: BITS,
+    mystring: STRING
+};
+```
+
+#### <a name="StaticTtems"></a>6.1.8.静态项
+
+```
+static_item : "static" ident ':' type '=' expr ';' ;
+```
+
+*静态项*与*常量*类似，除了它在程序中代表一个确定的内存位置。一个静态量在使用时从不“内联”，并且所有的引用都指向相同的内存位置。静态项有`static`声明周期。

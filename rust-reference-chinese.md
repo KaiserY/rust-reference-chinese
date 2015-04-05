@@ -62,6 +62,8 @@
     * [6.1.6.枚举](#Enumerations)
     * [6.1.7.常量项](#ConstantItems)
     * [6.1.8.静态项](#StaticTtems)
+      * [6.1.8.1.可变静态量](#MutableStatics)
+    * [6.1.9.特性](#Traits)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -1104,4 +1106,55 @@ const BITS_N_STRINGS: BitsNStrings<'static> = BitsNStrings {
 static_item : "static" ident ':' type '=' expr ';' ;
 ```
 
-*静态项*与*常量*类似，除了它在程序中代表一个确定的内存位置。一个静态量在使用时从不“内联”，并且所有的引用都指向相同的内存位置。静态项有`static`声明周期。
+*静态项*与*常量*类似，除了它在程序中代表一个确定的内存位置。一个静态量在使用时从不“内联”，并且所有的引用都指向相同的内存位置。静态项有`static`声明周期，它比Rust程序中其它任何声明周期都长。静态项可以存放在只读内存中如果它们不含任何内在的可变性。
+
+可能含有内部可变性的静态项可以通过`UnsafeCell`语言项获得。对静态项的所有访问都是安全的，不过它拥有一系列的限制：
+
+* 静态量不能包含任何析构函数
+* 静态值的类型必须是`Sync`以允许线程安全的访问
+* 静态量不能通过值引用其它静态量，只能通过引用
+* 常量不能引用静态量
+
+常量大体上是比静态量更合适的，除非储存了大量的数据，或者要求单地址和可变性。
+
+##### <a name="MutableStatics"></a>6.1.8.1.可变静态量
+如果静态项是用`mut`关键字声明的，那么它就允许被程序修改。Rust的目标之一就是使并发bug难以出现，而这明显是一个巨大的数据竞争和其他bug的根源。为此，需要一个`unsafe`块来读写可变静态变量。需要额外注意以确保对于同一进程中的其它线程来说对可变静态量的修改时安全的。
+
+然而，可变静态量也可以是很有用的。它们可以用来与C语言库交互和被C语言库使用（在`extern`块中）。
+
+```rust
+static mut LEVELS: u32 = 0;
+
+// This violates the idea of no shared state, and this doesn't internally
+// protect against races, so this function is `unsafe`
+unsafe fn bump_levels_unsafe1() -> u32 {
+    let ret = LEVELS;
+    LEVELS += 1;
+    return ret;
+}
+
+// Assuming that we have an atomic_add function which returns the old value,
+// this function is "safe" but the meaning of the return value may not be what
+// callers expect, so it's still marked as `unsafe`
+unsafe fn bump_levels_unsafe2() -> u32 {
+    return atomic_add(&mut LEVELS, 1);
+}
+```
+
+可变静态量与正常静态量有相同的限制，除了值的类型并不要求实现了`Sync`。
+
+#### <a name="Traits"></a>6.1.9.特性
+*特性*描述了一个方法类型的集合。
+
+特性可以包含方法的默认实现，按照一些未知的[`self`类型](#SelfTypes)编写；`self`类型要么完全不确定，要么被一些其它的特性所限制。
+
+特性通过对特定类型分别[实现](#Implementations)。
+
+```rust
+trait Shape {
+    fn draw(&self, Surface);
+    fn bounding_box(&self) -> BoundingBox;
+}
+```
+
+这里定义了一个带有两个方法的特性。

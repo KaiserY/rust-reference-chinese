@@ -71,6 +71,11 @@
   * [6.3.属性](#Attributes)
     * [6.3.1.包装箱专有属性](#CrateOnlyAttributes)
     * [6.3.2.模块特有属性](#ModuleOnlyAttributes)
+    * [6.3.3.函数特有属性](#FunctionOnlyAttributes)
+    * [6.3.4.静态量特有属性](#StaticOnlyAttributes)
+    * [6.3.5.FFI属性](#FFIAttributes)
+    * [6.3.6.宏相关属性](#MacroRelatedAttributes)
+    * [6.3.7.各种（其它）属性](#MiscellaneousAttributes)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -1486,3 +1491,55 @@ type int8_t = i8;
 * `plugin` - 加载一系列命名的包装箱作为编译器插件，例如，`#![plugin(foo, bar)]`。可选的每个插件的参数，也就是说，`#![plugin(foo(... args ...))]`，被提供给插件的注册函数。使用这个属性需要`plugin`功能通道。
 
 #### <a name="ModuleOnlyAttributes"></a>6.3.2.模块特有属性
+
+* `no_implicit_prelude` - 禁用在模块中插入`use std::prelude::*`
+* `path` -  指定加载模块的文件。`#[path="foo.rs"] mod bar;`等同于`mod bar { /* contents of foo.rs */ }`。路径相对于当前模块的目录。
+
+#### <a name="FunctionOnlyAttributes"></a>6.3.3.函数特有属性
+
+* `main` - 表明这个函数应给被传递给入口点，而不是包装箱根名为`main`的函数
+* `plugin_registrar` - 标记这个函数作为[编译器插件](http://doc.rust-lang.org/1.0.0-beta/book/plugins.html)的注册点，例如可加载的语法扩展
+* `start` - 表明这个函数应该作为入口点，覆盖“`start`”语言项。详见“`start`”[语言项](#LanguageItems)
+* `test` - 表明这个函数是一个测试函数，只在`--test`时被编译
+* `should_panic` - 表明这个测试函数应该恐慌，反转成功条件
+* `cold` - 这个函数不太可能被执行，所以用不同的方式优化它（和调用它）
+
+#### <a name="StaticOnlyAttributes"></a>6.3.4.静态量特有属性
+
+* `thread_local` - 对于一个`static mut`，这个信号表明这个静态量的值可能会因当前线程而改变。具体的结果由实现定义
+
+#### <a name="FFIAttributes"></a>6.3.5.FFI属性
+在一个`extern`块上，如下属性会被翻译：
+
+* `link_args` - 指定传递给链接器的参数，而不仅仅是库名称和类型。这个需要功能通道并且具体行为由实现定义（根据不同的连接器调用语法）
+* `link` - 表明一个原生库应该被链接以便这个块中的声明能够被正确链接。`link`支持一个可选的`kind`键值，他有3个可能的值：`dylib`，`static`和`framework`。查看[外部块](#ExternalBlocks)以了解更多。两个例子：`#[link(name = "readline")]`和`#[link(name = "CoreFoundation", kind = "framework")]`
+
+对于`extern`块内的声明，如下属性会被翻译：
+
+* `link_name` - 应该被导入的函数或静态量记号的名字
+* `linkage` - 对于静态量，它指定了[链接类型](http://llvm.org/docs/LangRef.html#linkage-types)
+
+对于`enum`：
+
+* `repr` - 在类C语言的枚举中，这设定的用于表现的内部类型。它接受一个参数，它代表这个枚举应该表现为哪种基本类型，或者`C`，它指定应该使用当前平台C ABI默认的`enum`大小。注意C中的枚举表现是未定义的，所以当C语言代码在特定标记下编译时这可能不正确。
+
+对于`struct`：
+
+* `repr` - 指定用于结构体的表现。它接受一系列选项。目前可接受的值是`C`和`packed`，它们也可以组合使用。`C`将会使用C ABI兼容的结构布局，而`packed`会移除字段间的填充（注意这可能是非常脆弱的并且在需要对齐的平台可能会出错）
+
+#### <a name="MacroRelatedAttributes"></a>6.3.6.宏相关属性
+
+* 在`mod`上使用`macro_use` - 这个模块中定义的宏对于父模块可见，在这个模块被引入后
+* 在`extern crate`上`macro_use` - 从这个包装箱载入宏。一个可选的名称列表`#[macro_use(foo, bar)]`限制只引入这些名字的宏。`extern crate`必须出现在包装箱根，而不是在`mod`中，这确保了[`$crate`宏变量](http://doc.rust-lang.org/1.0.0-beta/book/macros.html#the-variable-$crate)的功能正常
+* 在`extern crate`上使用`macro_reexport` - 重导出命名了的宏
+* `macro_export` - 导出一个宏用于跨包装箱使用
+* 在`extern crate`上使用`no_link` - 即使我们为这个包装箱载入了宏，也不链接到输出中
+
+查看[book中宏部分](http://doc.rust-lang.org/1.0.0-beta/book/macros.html#scoping-and-macro-import/export)来了解宏的更多信息
+
+#### <a name="MiscellaneousAttributes"></a>6.3.7.各种（其它）属性
+
+* `export_name` - 对于静态量和函数，这确定了导出记号的名称
+* `link_section` - 对于静态量和函数，这确定了这个项的内容会出现在目标文件中的哪个部分
+* `no_mangle` - 对于任何项，不使用标准的名字改编。设定了对于标识符这个项的记号
+* `packed` - 对于结构体或枚举，消除任何用于对齐字段的填充

@@ -67,6 +67,10 @@
     * [6.1.10.实现](#Implementations)
     * [6.1.11.外部块](#ExternalBlocks)
   * [6.2.可见性和私有性](#VisibilityAndPrivacy)
+    * [6.2.1 Re-exporting and Visibility](#ReExportingAndVisibility)
+  * [6.3.属性](#Attributes)
+    * [6.3.1.包装箱专有属性](#CrateOnlyAttributes)
+    * [6.3.2.模块特有属性](#ModuleOnlyAttributes)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -1345,3 +1349,140 @@ pub enum State {
     PubliclyAccessibleState2,
 }
 ```
+
+根据标记一个项可以是公有或私有的，Rust允许一个项通过两种方式访问：
+
+* 如果一个项是公有的，那么它可以从外部被任何它的公有父项使用
+* 如果一个项是私有的，它可以被当前模块和子项访问
+
+这两种方式非常强大，可以用来创建暴露公有API而隐藏内部实现细节的模块层次结构。为了帮助解释，这里有一些用例和它们如何继承的：
+
+* 一个库开发者想要向链接它的库的包装箱暴露一些功能。作为第一个情况的结果，这意味着任何可以在外部使用的功能必须从根到目标项都声明为`pub`。其中的任何私有项都会不允许外部访问。
+* 一个包装箱需要一个全局可用的“帮助模块”，不过它并不像暴露帮助模块作为公有API。为了做到这点，包装箱层次的根可以有一个在内部作为“公有API”的私有模块。因为整个包装箱是根的子项，那么根据第二条在整个本地包装箱中可以访问这个私有模块。
+* 当为一个模块编写单元测试时，通常习惯上定义一个用于测试的叫做`mod test`的直接子模块。根据第二条它可以访问父模块中的任何项，这意味着内部实现细节也可以在子模块中无间隙的被测试。
+
+在第二条中，它提到了一个私有项“可以被”当前模块和子项访问，不过访问一个项的实际意义依赖于项是什么。访问一个模块，例如，意味着查看它的内部（来导入更多项）。另一方面，访问一个函数意味着调用它。另外，路径表达式和导入语句被认为是访问一个项，就导入/表达式只在目标项在当前可见作用域中时才有效这点而言。
+
+下面是一个演示了上述3点的例子：
+
+```rust
+// This module is private, meaning that no external crate can access this
+// module. Because it is private at the root of this current crate, however, any
+// module in the crate may access any publicly visible item in this module.
+mod crate_helper_module {
+
+    // This function can be used by anything in the current crate
+    pub fn crate_helper() {}
+
+    // This function *cannot* be used by anything else in the crate. It is not
+    // publicly visible outside of the `crate_helper_module`, so only this
+    // current module and its descendants may access it.
+    fn implementation_detail() {}
+}
+
+// This function is "public to the root" meaning that it's available to external
+// crates linking against this one.
+pub fn public_api() {}
+
+// Similarly to 'public_api', this module is public so external crates may look
+// inside of it.
+pub mod submodule {
+    use crate_helper_module;
+
+    pub fn my_method() {
+        // Any item in the local crate may invoke the helper module's public
+        // interface through a combination of the two rules above.
+        crate_helper_module::crate_helper();
+    }
+
+    // This function is hidden to any module which is not a descendant of
+    // `submodule`
+    fn my_implementation() {}
+
+    #[cfg(test)]
+    mod test {
+
+        #[test]
+        fn test_my_implementation() {
+            // Because this module is a descendant of `submodule`, it's allowed
+            // to access private items inside of `submodule` without a privacy
+            // violation.
+            super::my_implementation();
+        }
+    }
+}
+```
+
+对于一个Rust程序为了通过私有性检查，所有路径必须根据上面给出的两种情况访问。这包括所有的`use`语句，表达式，类型，等。。。
+
+#### <a name="ReExportingAndVisibility"></a>6.2.1.重导出和可见性
+Rust允许公有的重导出项通过`pub use`指令。因为这是一个公有指令，更具上面的规则它允许在当前模块中使用。它本质上允许对重导出项的公有访问。例如，下面的程序是有效的：
+
+```rust
+pub use self::implementation::api;
+
+mod implementation {
+    pub mod api {
+        pub fn f() {}
+    }
+}
+```
+
+这意味着任何引用`implementation::api::f`的外部包装箱将会受到一个私有性违反，而`api::f`路径则是被允许的。
+
+当重导出一个私有项，它可以被认为是允许缩短“私有链”，而不是按正常情况传递命名空间层次。
+
+### <a name="Attributes"></a>6.3.属性
+
+```
+attribute : '#' '!' ? '[' meta_item ']' ;
+meta_item : ident [ '=' literal
+                  | '(' meta_seq ')' ] ? ;
+meta_seq : meta_item [ ',' meta_seq ] ? ;
+```
+
+任何项声明都可以有*属性*适用于它。Rust的属性采用ECMA-335中的属性模型，使用来自ECMA-334（C#）的语法。属性是一个通用的，自由形式的元数据，它根据名称，使用公约，语言和编译器版本来翻译。属性可能表现为任何如下：
+
+* 一个单独的标识符，属性名称
+* 一个标识符后跟一个等号“`=`”和一个常量，提供一个键/值对
+* 一个标识符后跟一个参数化的子属性参数列表
+
+井号（`#`）后带有感叹号（`!`）的属性适用于定义于其中的项。井号后没有感叹号的属性适用于它之后的项。
+
+一个属性的例子：
+
+```rust
+// General metadata applied to the enclosing module or crate.
+#![crate_type = "lib"]
+
+// A function marked as a unit test
+#[test]
+fn test_foo() {
+  /* ... */
+}
+
+// A conditionally-compiled module
+#[cfg(target_os="linux")]
+mod bar {
+  /* ... */
+}
+
+// A lint attribute used to suppress a warning/error
+#[allow(non_camel_case_types)]
+type int8_t = i8;
+```
+
+> **注意**：在将来的某个时候，编译器将会区分语言保留的和用户可用的属性。在这之前，在被加载的语法扩展和编译器自带的属性之间并没有有效的区别。
+
+#### <a name="CrateOnlyAttributes"></a>6.3.1.包装箱专有属性
+
+* `crate_name` - 指定包装箱的名称
+* `crate_type ` - 详见[链接](#Linkage)
+* `feature` - 详见[编译器功能](#CompilerFeatures)
+* `no_builtins` - 禁用可能存在的调用库函数时的特定代码模式优化
+* `no_main` - 禁用生成`main`符号。在被链接的其它对象定义了`main`是有用
+* `no_start` - 禁用链接`native`包装箱，它指定了“start”语言项。
+* `no_std` - 禁用链接`std`包装箱
+* `plugin` - 加载一系列命名的包装箱作为编译器插件，例如，`#![plugin(foo, bar)]`。可选的每个插件的参数，也就是说，`#![plugin(foo(... args ...))]`，被提供给插件的注册函数。使用这个属性需要`plugin`功能通道。
+
+#### <a name="ModuleOnlyAttributes"></a>6.3.2.模块特有属性

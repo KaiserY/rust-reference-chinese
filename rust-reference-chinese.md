@@ -1157,4 +1157,52 @@ trait Shape {
 }
 ```
 
-这里定义了一个带有两个方法的特性。
+这里定义了一个带有两个方法的特性。所有在这个作用域中[实现](#Implementations)了这个特性的值都可以调用`draw`和`bounding_box`两个方法，使用`value.bounding_box()`[语法](#MethodCallExpressions)。
+
+可以为特性指定一个类型参数来使之泛型化。它出现在特性名称的后面，使用[泛型函数](#Generic functions)相同的语法。
+
+```rust
+trait Seq<T> {
+   fn len(&self) -> u32;
+   fn elt_at(&self, n: u32) -> T;
+   fn iter<F>(&self, F) where F: Fn(T);
+}
+```
+
+泛型函数可以使用特性作为它们类型参数的*界限*。这将产生两个影响：只有实现了这个特性的类型可以实例化这个参数，并且在泛型函数内，特性的方法可以在这个参数类型的值上调用。例如：
+
+```rsut
+fn draw_twice<T: Shape>(surface: Surface, sh: T) {
+    sh.draw(surface);
+    sh.draw(surface);
+}
+```
+
+特性也可以定义跟自己相同名称的[对象类型](#ObjectTypes)。这个类型的值通过强转指针值（指向作用域中一个实现了给定特性的类型）为特性名称的指针来创建，作为一个类型来使用。
+
+```rust
+let myshape: Box<Shape> = Box::new(mycircle) as Box<Shape>;
+```
+
+结果的值是一个包含我们强转的值的装箱，连同我们使用的实现的方法标识符信息。带有特性类型的值可以在其之上[调用方法](#MethodCallExpressions)，对于特性的任何方法，并且可以用来实例化特性限制的类型参数。
+
+特性方法可以是静态的，这意味着它缺少`self`参数。这意味着它们只能使用方法调用语法（`f(x)`）而不能使用方法调用语法（`obj.f()`）调用。使用特性静态方法的方式是使用特性名称限制它，将特性名称作为模块来对待。例如：
+
+```rust
+trait Num {
+    fn from_i32(n: i32) -> Self;
+}
+impl Num for f64 {
+    fn from_i32(n: i32) -> f64 { n as f64 }
+}
+let x: f64 = Num::from_i32(42);
+```
+
+特性可以从其它特性继承。例如：
+
+```rust
+trait Shape { fn area(&self) -> f64; }
+trait Circle : Shape { fn radius(&self) -> f64; }
+```
+
+`Circle : Shape`语法意味着实现了`Circle`的类型也必须实现`Shape`。多个父特性使用`+`分隔，`trait Circle : Shape + PartialEq { }`。

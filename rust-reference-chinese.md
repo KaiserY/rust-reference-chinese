@@ -61,9 +61,12 @@
     * [6.1.5.结构体](#Structures)
     * [6.1.6.枚举](#Enumerations)
     * [6.1.7.常量项](#ConstantItems)
-    * [6.1.8.静态项](#StaticTtems)
+    * [6.1.8.静态项](#StaticItems)
       * [6.1.8.1.可变静态量](#MutableStatics)
     * [6.1.9.特性](#Traits)
+    * [6.1.10.实现](#Implementations)
+    * [6.1.11.外部块](#ExternalBlocks)
+  * [6.2.可见性和私有性](#VisibilityAndPrivacy)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -1100,7 +1103,7 @@ const BITS_N_STRINGS: BitsNStrings<'static> = BitsNStrings {
 };
 ```
 
-#### <a name="StaticTtems"></a>6.1.8.静态项
+#### <a name="StaticItems"></a>6.1.8.静态项
 
 ```
 static_item : "static" ident ':' type '=' expr ';' ;
@@ -1171,7 +1174,7 @@ trait Seq<T> {
 
 泛型函数可以使用特性作为它们类型参数的*界限*。这将产生两个影响：只有实现了这个特性的类型可以实例化这个参数，并且在泛型函数内，特性的方法可以在这个参数类型的值上调用。例如：
 
-```rsut
+```rust
 fn draw_twice<T: Shape>(surface: Surface, sh: T) {
     sh.draw(surface);
     sh.draw(surface);
@@ -1205,4 +1208,140 @@ trait Shape { fn area(&self) -> f64; }
 trait Circle : Shape { fn radius(&self) -> f64; }
 ```
 
-`Circle : Shape`语法意味着实现了`Circle`的类型也必须实现`Shape`。多个父特性使用`+`分隔，`trait Circle : Shape + PartialEq { }`。
+`Circle : Shape`语法意味着实现了`Circle`的类型也必须实现`Shape`。多个父特性使用`+`分隔，`trait Circle : Shape + PartialEq { }`。在一个给定的实现了`Circle`的`T`类型，可以涉及到`Shape`的方法，因为类型检查器检查任何实现了`Circle`是否也实现了`Shape`。
+
+在类型参数化函数中，父特性的方法可以在子特性限制的值上调用。参考前面`trait Circle : Shape`的例子：
+
+```rust
+fn radius_times_area<T: Circle>(c: T) -> f64 {
+    // `c` is both a Circle and a Shape
+    c.radius() * c.area()
+}
+```
+
+同样的，父特性的方法可以在特性对象上调用：
+
+```rust
+let mycircle = Box::new(mycircle) as Box<Circle>;
+let nonsense = mycircle.radius() * mycircle.area();
+```
+
+#### <a name="Implementations"></a>6.1.10.实现
+*实现*是一个为一个特定类型实现了一个[特性](#Traits)的项。
+
+实现使用`impl`关键字实现。
+
+```rust
+struct Circle {
+    radius: f64,
+    center: Point,
+}
+
+impl Copy for Circle {}
+
+impl Clone for Circle {
+    fn clone(&self) -> Circle { *self }
+}
+
+impl Shape for Circle {
+    fn draw(&self, s: Surface) { do_draw_circle(s, *self); }
+    fn bounding_box(&self) -> BoundingBox {
+        let r = self.radius;
+        BoundingBox{x: self.center.x - r, y: self.center.y - r,
+         width: 2.0 * r, height: 2.0 * r}
+    }
+}
+```
+
+也可以并不涉及到特性来定义一个实现。这样的实现的方法只能在实现对象类型的值上直接调用。在这样的实现中，特性类型和`impl`后面的`for`被省略。这样的实现被限制在名义上的类型（枚举，结构体），并且因为`self`类型它只能出现在当前模块或子模块中：
+
+```rust
+struct Point {x: i32, y: i32}
+
+impl Point {
+    fn log(&self) {
+        println!("Point is at ({}, {})", self.x, self.y);
+    }
+}
+
+let my_point = Point {x: 10, y:11};
+my_point.log();
+```
+
+当在`impl`中*指定了*一个特性，所有声明为特性一部分的的方法都必须被实现，带有匹配的类型和类型参数数量。
+
+实现可以带有类型参数，它可以与特性的类型参数不同。实现的类型参数写在`impl`关键字之后。
+
+```rust
+impl<T> Seq<T> for Vec<T> {
+   /* ... */
+}
+impl Seq<bool> for u32 {
+   /* Treat the integer as a sequence of bits */
+}
+```
+
+#### <a name="ExternalBlocks"></a>6.1.11.外部块
+
+```
+extern_block_item : "extern" '{' extern_block '}' ;
+extern_block : [ foreign_fn ] * ;
+```
+
+外部块组成了Rust外部语言接口的基础。外部块中的定义描述了外部的，非Rust库的符号。
+
+外部块中的函数与其它Rust函数一样被定义，除了它们可能没有函数体并以一个分号结尾。
+
+```rsut
+extern crate libc;
+use libc::{c_char, FILE};
+
+extern {
+    fn fopen(filename: *const c_char, mode: *const c_char) -> *mut FILE;
+}
+```
+
+外部块中的函数可以被Rust代码调用，就像Rust中定义的函数一样。Rust编译器会自动在Rust ABI和外部语言ABI之间转换。
+
+一系列的[属性](#Attributes)可以控制外部块的行为。
+
+外部块默认假设它调用的库使用标准C“cdecl” ABI。其它的ABI可以用`abi`字符串属性指定，如下所示：
+
+```rust
+// Interface to the Windows API
+extern "stdcall" { }
+```
+
+`link`属性允许指定库的名称。指定后编译器会尝试链接给定名称的原生库。
+
+```rust
+#[link(name = "crypto")]
+extern { }
+```
+
+外部块中定义的函数的类型是`extern "abi" fn(A1, ..., An) -> R`，其中`A1...An`声明了参数类型列表而`R`则是声明的返回值类型。
+
+### <a name="VisibilityAndPrivacy"></a>6.2.可见性和私有性
+这里有两个术语经常被交替使用，而它们尝试传达的是一个问题的答案“这个项可以在这个地方使用吗？”
+
+Rust的名称解析工作在一个全局的命名空间分层结构上。层次中的每一层可以被认为是一些项。这项项是上面提到的这些，也包括外部包装箱。声明或定义一个新模块可以被认为是在其定义的地方向层次中插入一个新的树。
+
+为了控制接口是否可以跨模块使用，Rust检查每一个项的使用来确定这是否是允许的。这是私有警告产生的地方，或者“你使用了一个另一个模块的私有项而这是不允许的。”
+
+Rust的一切默认是*私有的*，除了一个例外。一个`pub`枚举中的枚举变量也默认是公有的。你被允许使用`priv`关键字来修改这个默认的可见性。当一个项被定义为`pub`，它可以被认为能够被外部世界访问。例如：
+
+```rust
+// Declare a private struct
+struct Foo;
+
+// Declare a public struct with a private field
+pub struct Bar {
+    field: i32
+}
+
+// Declare a public enum with two public variants
+pub enum State {
+    PubliclyAccessibleState,
+    PubliclyAccessibleState2,
+}
+```

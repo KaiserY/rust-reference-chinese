@@ -76,6 +76,8 @@
     * [6.3.5.FFI属性](#FFIAttributes)
     * [6.3.6.宏相关属性](#MacroRelatedAttributes)
     * [6.3.7.各种（其它）属性](#MiscellaneousAttributes)
+    * [6.3.8.条件编译](#ConditionalCompilation)
+    * [6.3.9.Lint检查属性](#LintCheckAttributes)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -1543,3 +1545,55 @@ type int8_t = i8;
 * `link_section` - 对于静态量和函数，这确定了这个项的内容会出现在目标文件中的哪个部分
 * `no_mangle` - 对于任何项，不使用标准的名字改编。设定了对于标识符这个项的记号
 * `packed` - 对于结构体或枚举，消除任何用于对齐字段的填充
+* `simd` - 对与特定元组结构体，对于算术操作，它使用目标的SIMD指令，如果有的话；需要`simd`功能通道来使用这个属性
+* `static_assert` - 对于类型是`bool`的静态量，如果它不初始化为`true`就报错并终止编译
+* `unsafe_destructor` - 允许实现“`drop`”语言项当类型并未实现“`send`”语言项时；需要`unsafe_destructor`功能通道来使用这个属性
+* `unsafe_no_drop_flag` - 对于结构体，去掉阻止析构函数被运行两次的标记。使用这个属性时同一对象可能会运行多次析构函数。
+* `doc` - 像`/// foo`的文档注释等同于`#[doc = "foo"]`
+* `rustc_on_unimplemented` - 编写一个自定义的记录作为当某个类型被发现未实现特性的错误信息。你可以使用格式化参数，像`{T}`，`{A}`来代表使用相应特性的类型参数类型相同名称的类型。`{Self}`用来代替应该却未实现特性的类型的名称。为了使用它，需要启用`on_unimplemented`功能通道。
+
+#### <a name="ConditionalCompilation"></a>6.3.8.条件编译
+有时你希望对于相同的代码有不同的编译输出，依赖编译目标，例如目标操作系统，或启用发行构建。
+
+这里有两种配置选项，一个是是否定义（`#[cfg(foo)]`），另一个是包含一个字符串用于检查（`#[cfg(bar = "baz")]`）（目前只用编译器定义的配置可以使用后一种形式）。
+
+```rust
+// The function is only included in the build when compiling for OSX
+#[cfg(target_os = "macos")]
+fn macos_only() {
+  // ...
+}
+
+// This function is only included when either foo or bar is defined
+#[cfg(any(foo, bar))]
+fn needs_foo_or_bar() {
+  // ...
+}
+
+// This function is only included when compiling for a unixish OS with a 32-bit
+// architecture
+#[cfg(all(unix, target_pointer_width = "32"))]
+fn on_32bit_unix() {
+  // ...
+}
+
+// This function is only included when foo is not defined
+#[cfg(not(foo))]
+fn needs_not_foo() {
+  // ...
+}
+```
+
+这演示了一些使用`#[cfg(...)]`属性可以达成的条件编译。`any`，`all`和`not`可以用来嵌套组成任意复杂的配置。
+
+如下配置必须由实现定义：
+
+* `target_arch = "..."`。目标CPU构架，例如`x86`，`x86_64`，`mips`，`powerpc`，`arm`或`aarch64`
+* `target_endian = "..."`。目标CPU的字节序，要么是`little`要么是`big`
+* `target_family = "..."`。目标操作系统家族，例如`"unix"`或`"windows"`。这些配置选项自身被定义为配置，像`unix`或`windows`
+* `target_os = "..."`。目标操作系统，例如包括`"win32"`，`"macos"`，`"linux"`，`"android"`，`"freebsd"`，`"dragonfly"`，`"bitrig"`或`"openbsd"`
+* `target_pointer_width = "..."`。目标指针的位长度。`32`针对32位指针，同理`64`针对64位指针
+* `unix`。见`target_family`
+* `windows`。见`target_family`
+
+#### <a name="LintCheckAttributes"></a>6.3.9.Lint检查属性

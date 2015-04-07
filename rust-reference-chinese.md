@@ -82,6 +82,7 @@
     * [6.3.11.内联属性](#InlineAttributes)
     * [6.3.12.`derive`属性](#Derive)
     * [6.3.13.编译器功能](#CompilerFeatures)
+* [7.语句和表达式](#StatementsAndExpressions)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -1747,4 +1748,32 @@ Rust的特定部分可能被实现在编译器中，不过它们不一定能够�
 * `macro_reexport` - 允许宏在被一个包装箱导入后从另一个包装箱中重导出。记住这个功能开始仅仅被设计为在Rust标准库中使用，并且倾向于改变
 * `non_ascii_idents` - 使编译器支持使用非ASCII标识符，不过它的实现还十分粗糙，所以它可以看作是一个实验性功能直到标识符的规格完全出炉为止
 * `no_std` - 允许使用`#![no_std]`包装箱属性，它禁用隐式的`extern crate std`。它特别的要求使用`libstd`“外观”下的不稳定API例如`libcore`和`libcollections`。当使用语法扩展时可能会产生问题，包括`#[derive]`
-* `on_unimplemented` - 
+* `on_unimplemented` - 允许使用`#[rustc_on_unimplemented]`属性，它允许为特性定义添加特定的记录作为期望但未找到实现时的错误信息
+* `optin_builtin_traits` - 允许定义默认和负（negative）的特性实现。实验性功能
+* `plugin` - 使用[编译器插件](http://doc.rust-lang.org/1.0.0-beta/book/plugins.html)来自定义lint检查或语法扩展。这依赖编译器内部细节并倾向于改变
+* `plugin_registrar` - 表明一个包装箱提供了[编译器插件](http://doc.rust-lang.org/1.0.0-beta/book/plugins.html)
+* `quote` - 允许使用`quote_*!`系列宏，它们的实现非常差并会被修改为一个更合适的实现
+* `rustc_attrs` - 启用内部的`#[rustc_*]`属性，它只供内部使用或可能在将来增加意义
+* `rustc_diagnostic_macros` - 一个神秘的功能，用在`rustc`的实现中，对一般用户没有意义
+* `simd` - 允许使用`#[simd]`属性，它过度的简单并不是我们想长期维护的SIMD接口
+* `simd_ffi` - 允许在外部函数的签名中使用SIMD向量。SIMD接口倾向于改变
+* `staged_api` - 允许使用稳定性标记和包装箱的`#![staged_api]`属性
+* `static_assert` - `#[static_assert]`的功能是实验性和不稳定的。这个属性可以附加到`static`的`bool`类型上并且编译器会在`bool`在编译时为`false`时报错。这个功能的这个版本是不直观和不合意的
+* `start` - 允许使用`#[start]`属性，它改变Rust程序的入口点。这个功能，特别是被标记函数的签名，倾向于改变
+* `struct_inherit` - 允许使用结构体继承，它勉强被实现并可能被移除。不要使用它
+* `struct_variant` - 机构化枚举变量（带有命名字段的）。目前还不知道这个枚举变量样式是否能作为元组形式被完全支持，并且也不确定这样的变量是否应该在语言中保留。到目前为止这个变量形式被隐藏在功能标记之后
+* `thread_local` - `#[thread_local]`属性的使用时实验性的并被认为是不稳定的。这个属性用来定义一个`static`作为独特的各线程平衡的LLVM实现，它在内核加载器和动态链接器中一致工作。这并不一定在所有平台有效，并且使用也是不受鼓励的
+* `trace_macros` - 允许`trace_macros`宏的使用，它有很重的hack倾向并确定会被移除
+* `unboxed_closures` - Rust新的闭包设计，它目前正在实现中并带有很多已知的bug
+* `unsafe_destructor` - 允许使用`#[unsafe_destructor]`属性，它被广泛的认为不安全并在语言的改进中将会过时
+* `unsafe_no_drop_flag` - 允许使用`#[unsafe_no_drop_flag]`属性，它移除了实现了`Drop`特性的类型的隐藏标记。`Drop`标记的设计倾向于改变，并且这个功能将来可能会被移除
+* `unmarked_api` - 允许使用`#![staged_api]`包装箱中的那些没有稳定标记的项。这些项不被编译器允许存在，所以如果你需要它很有可能是一个编译器bug
+* `visible_private_types` - 允许公有API暴露私有类型，例如，作为公有函数的返回值。这个功能将来可能会被移除
+* `allow_internal_unstable` - 允许`macro_rules!`宏被`#[allow_internal_unstable]`属性标记，设计为允许`std`宏在内部调用`#[unstable]`/功能通道后的功能而不影响调用者（也就是说，就封装而言让它们表现起来更像函数调用）
+
+如果一个功能被提升为语言功能，那么所有现存的程序将会开始收到关于被启用的新功能的`#[feature]`指令的编译警告（因为这个指令已不再需要）。然而，如果一个功能被决定应该从语言中移除，将会产生一个错误（如果之前没有一个解析错误的话）。这种情况下指令不再必须，并且如果这些功能不被移除的话现存代码可能会出错。
+
+如果在指令中发现了未知功能，将导致一个编译错误。一个未知功能是指还未被编译器识别的功能。
+
+## <a name="StatementsAndExpressions"></a>7.语句和表达式
+Rust*主要*是一个表达式语言。

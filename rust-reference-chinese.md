@@ -83,6 +83,9 @@
     * [6.3.12.`derive`属性](#Derive)
     * [6.3.13.编译器功能](#CompilerFeatures)
 * [7.语句和表达式](#StatementsAndExpressions)
+  * [7.1.语句](#Statements)
+    * [7.1.1.声明语句](#DeclarationStatements)
+      * [7.1.1.1.项声明](#ItemDeclarations)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -1776,4 +1779,16 @@ Rust的特定部分可能被实现在编译器中，不过它们不一定能够�
 如果在指令中发现了未知功能，将导致一个编译错误。一个未知功能是指还未被编译器识别的功能。
 
 ## <a name="StatementsAndExpressions"></a>7.语句和表达式
-Rust*主要*是一个表达式语言。
+Rust*主要*是一个表达式语言。这意味着大部分形式的产生值或产生作用的计算都直接被统一的*表达式*语法分类管理。每种表达式通常都可以*嵌套*在其它类型的表达式之中，并且评估表达式涉及到指定表达式产生的值和自表达式的顺序的规则是自我评估的。
+
+相反的，Rust中的语句*大多*用于包含和显式的排序表达式计算。
+
+### <a name="Statements"></a>7.1.语句
+一个*语句*是一个块的一部分，块则是外部[表达式](#Expressions)或[函数](#Functions)的一部分。
+
+Rust有两种类型的语句：[声明语句](#DeclarationStatements)和[表达式语句](#ExpressionStatements)。
+
+#### <a name="DeclarationStatements"></a>7.1.1.声明语句
+一个*声明语句*在内部的语句块中引入了1个或多个*名称*。声明的名称可能代表新的位置或新的项。
+
+##### <a name="ItemDeclarations"></a>7.1.1.1.项声明

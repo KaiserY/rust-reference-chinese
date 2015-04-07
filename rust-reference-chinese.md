@@ -78,6 +78,10 @@
     * [6.3.7.各种（其它）属性](#MiscellaneousAttributes)
     * [6.3.8.条件编译](#ConditionalCompilation)
     * [6.3.9.Lint检查属性](#LintCheckAttributes)
+    * [6.3.10.语言项](#LanguageItems)
+    * [6.3.11.内联属性](#InlineAttributes)
+    * [6.3.12.`derive`属性](#Derive)
+    * [6.3.13.编译器功能](#CompilerFeatures)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -1602,3 +1606,145 @@ Lint检查命名了一个潜在的不合适的代码模式，例如不可达代�
 对于任何`C`的lint检查：
 
 * `allow(C)`覆盖了`C`的检查所以违规将不会被报告
+* `deny(C)`表明在遇到`C`的违规后产生一个错误
+* `forbid(C)`与`deny(C)`相同，不过也禁止了改变之后的lint级别
+* `warn(C)`对于`C`的违规提出警告并继续编译
+
+编译器支持的lint检查可以通过`rustc -W help`找到，以及它们的默认设定。[编译器插件](http://doc.rust-lang.org/1.0.0-beta/book/plugins.html#lint-plugins)可以提供额外的lint检查。
+
+```rust
+mod m1 {
+    // Missing documentation is ignored here
+    #[allow(missing_docs)]
+    pub fn undocumented_one() -> i32 { 1 }
+
+    // Missing documentation signals a warning here
+    #[warn(missing_docs)]
+    pub fn undocumented_too() -> i32 { 2 }
+
+    // Missing documentation signals an error here
+    #[deny(missing_docs)]
+    pub fn undocumented_end() -> i32 { 3 }
+}
+```
+
+这个例子展示了如何使用`allow`与`warn`来切换一个特定检查的开关：
+
+```rust
+#[warn(missing_docs)]
+mod m2{
+    #[allow(missing_docs)]
+    mod nested {
+        // Missing documentation is ignored here
+        pub fn undocumented_one() -> i32 { 1 }
+
+        // Missing documentation signals a warning here,
+        // despite the allow above.
+        #[warn(missing_docs)]
+        pub fn undocumented_two() -> i32 { 2 }
+    }
+
+    // Missing documentation signals a warning here
+    pub fn undocumented_too() -> i32 { 3 }
+}
+```
+
+这个例子展示了如何使用`forbid`在lint检查中禁止`allow`的使用：
+
+```rsut
+#[forbid(missing_docs)]
+mod m3 {
+    // Attempting to toggle warning signals an error here
+    #[allow(missing_docs)]
+    /// Returns 2.
+    pub fn undocumented_too() -> i32 { 2 }
+}
+```
+
+#### <a name="LanguageItems"></a>6.3.10.语言项
+Rust代码中定义了一些基本Rust操作，而不是直接用C或汇编语言实现。这样定义的操作便于编译器查找。`lang`语言项使这样的定义变得可能。例如，Rust标准库中的`str`模块定义字符串相等函数：
+
+```rust
+#[lang="str_eq"]
+pub fn eq_slice(a: &str, b: &str) -> bool {
+    // details elided
+}
+```
+
+`str_eq`对于Rust编译器有特殊的意义，并且这个属性的出现意味着将会使用这个定义生成字符串相等函数的调用。
+
+一个完整的内建语言项的列表将在未来被添加。
+
+#### <a name="InlineAttributes"></a>6.3.11.内联属性
+内联属性用来建议编译器进行一个内联扩展并在调用者中放置函数或静态量的拷贝而不是不是生成函数调用和对静态量定义的位置的访问。
+
+编译器基于内部启发来自动的内联函数。不正确的内联函数确实会使程序变慢，所以应该谨慎使用。
+
+不可变静态量总是被认为是可内联的除非被标记为`#[inline(never)]`。当两个不同的可内联静态量拥有相同内存地址时的行为是未定义的。换句话说，编译器可以自由的将这这两个重复的静态量折叠在一起。
+
+`#[inline]`和`#[inline(always)]`总是使得函数被序列化进包装箱的元数据中以允许跨包装箱内联。
+
+这有3种不同类型的内联属性：
+
+* `#[inline]`提示编译器进行一个内联展开
+* `#[inline(always)]`请求编译器总是进行一个内联展开
+* `#[inline(never)]`请求编译器从不进行一个内联展开
+
+#### <a name="Derive"></a>6.3.12.`derive`属性
+`derive`属性允许指定特性自动为数据结构实现。例如，下面会为`Foo`创建一个`PartialEq`和`Clone`特性的`impl`，类型参数`T`将会得到带有`PartialEq`和`Clone`限制的合适的`impl`：
+
+```rust
+#[derive(PartialEq, Clone)]
+struct Foo<T> {
+    a: i32,
+    b: T
+}
+```
+
+生成的`PartialEq`的`impl`等同于
+
+```rsut
+impl<T: PartialEq> PartialEq for Foo<T> {
+    fn eq(&self, other: &Foo<T>) -> bool {
+        self.a == other.a && self.b == other.b
+    }
+
+    fn ne(&self, other: &Foo<T>) -> bool {
+        self.a != other.a || self.b != other.b
+    }
+}
+```
+
+#### <a name="CompilerFeatures"></a>6.3.13.编译器功能
+Rust的特定部分可能被实现在编译器中，不过它们不一定能够被日常使用。这些功能经常是“原型质量”或“基本上能用在生产环境”，不过也可能不够稳定到能被认为是一个成熟的语言功能。
+
+为此，Rust可以识别一个特殊的包装箱级别的属性形式：
+
+```rust
+#![feature(feature1, feature2, feature3)]
+```
+
+这个指令通知编译器这个功能列表：`feature1`，`feature2`和`feature3`应该都被启用。这个只在包装箱级别被识别，不在模块级别。没有这个指令，所有的功能被认为是关闭的，同时使用这些功能会导致编译错误。
+
+目前实现了的编译器功能有：
+
+* `advanced_slice_patterns` - 详见[匹配表达式](#MatchExpressions)；具体的片段模式语义倾向于改变，所以一些类型还不稳定
+* `slice_patterns` - 可用，不过实际上，片段模式是灰常糟糕并完全不稳定的
+* `asm` - `asm!`宏提供了一个内联汇编的手段。这常常是有用的，不过具体语法和它的语义可能会改变，所以请选择性的使用这个宏
+* `associated_types` - 允许特性中的类型别名。实验性功能
+* `box_patterns` - 允许`box`模式，具体的语义倾向于改变
+* `box_syntax` - 允许使用`box`表达式，具体的语义倾向于改变
+* `concat_idents` - 允许使用`concat_idents`宏，对于连接标识符它在很多方面都是不足的，所以可能直接完全移除是更合理的
+* `custom_attribute` - 允许使用编译器未知的属性这样新属性可以以后向兼容的方式添加进来（RFC 572）
+* `custom_derive` - 允许使用`#[derive(Foo,Bar)]`作为`#[derive_Foo] #[derive_Bar]`的语法糖，它可以作为用户定义的语法扩展
+* `intrinsics` - 允许使用“rust-intrinsics”ABI。编译器固有功能是天生不稳定的并且不能保证它们干了啥
+* `lang_items` - 允许使用`#[lang]`属性。就像`intrinsics`，语言项是天生不稳定的并且不能保证它们干了啥
+* `link_args` - 这个属性用于指定传递给连接器的自定义标记，不过强烈不建议使用。编译器对于系统连接器的使用并不保证在将来持续，并且如果不使用系统连接器传递自定义标记也没有多少意义
+* `link_llvm_intrinsics` - 允许通过`#[link_name="llvm.*"]`链接LLVM的固有功能
+* `linkage` - 允许使用`linkage`属性，它是不可移植的
+* `log_syntax` - 允许使用`log_syntax`宏属性，它有点很强的hack味道所以确定会被移出
+* `main` - 允许`#[main]`属性的使用，它改变Rust程序的入口点。这个功能倾向于改变
+* `macro_reexport` - 允许宏在被一个包装箱导入后从另一个包装箱中重导出。记住这个功能开始仅仅被设计为在Rust标准库中使用，并且倾向于改变
+* `non_ascii_idents` - 使编译器支持使用非ASCII标识符，不过它的实现还十分粗糙，所以它可以看作是一个实验性功能直到标识符的规格完全出炉为止
+* `no_std` - 允许使用`#![no_std]`包装箱属性，它禁用隐式的`extern crate std`。它特别的要求使用`libstd`“外观”下的不稳定API例如`libcore`和`libcollections`。当使用语法扩展时可能会产生问题，包括`#[derive]`
+* `on_unimplemented` - 

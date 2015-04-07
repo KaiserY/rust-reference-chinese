@@ -1597,3 +1597,8 @@ fn needs_not_foo() {
 * `windows`。见`target_family`
 
 #### <a name="LintCheckAttributes"></a>6.3.9.Lint检查属性
+Lint检查命名了一个潜在的不合适的代码模式，例如不可达代码或被省略的文档，对于那些指定了属性的静态实体。
+
+对于任何`C`的lint检查：
+
+* `allow(C)`覆盖了`C`的检查所以违规将不会被报告

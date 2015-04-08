@@ -2095,3 +2095,40 @@ as
 相同优先级的运算符从左到右顺序计算。同级的[单目运算符](#UnaryOperatorExpressions)强于任何双目运算符。
 
 #### <a name="GroupedExpressions"></a>7.2.13.组合表达式
+一个包含在括号中的表达式代表它它内部表达式的结果。括号可以用来显示的指定表达式内的计算顺序。
+
+```
+paren_expr : '(' expr ')' ;
+```
+
+一个括号表达式的例子：
+
+```rust
+let x: i32 = (2 + 3) * 4;
+```
+
+#### <a name="CallExpressions"></a>7.2.14.调用表达式
+
+```
+expr_list : [ expr [ ',' expr ]* ] ? ;
+paren_expr_list : '(' expr_list ')' ;
+call_expr : expr paren_expr_list ;
+```
+
+一个*调用表达式*调用一个函数，提供0个或多个输入位置和一个可选的引用位置作为函数的输出，绑定为调用右侧的`lval`。如果函数最终返回，那么表达式完成。
+
+一些调用表达式的例子：
+
+```rust
+let x: i32 = add(1i32, 2i32);
+let pi: Result<f32, _> = "3.14".parse();
+```
+
+#### <a name="CallExpressions"></a>7.2.15.Lambda表达式
+
+```
+ident_list : [ ident [ ',' ident ]* ] ? ;
+lambda_expr : '|' ident_list '|' expr ;
+```
+
+一个*lambda表达式*（有时叫做“匿名函数表达式”）定义了一个函数并代表一个值，在一个单独的表达式里。一个lambda表达式是一个管道符号分隔（`|`）的标识符列表后跟一个表达式。

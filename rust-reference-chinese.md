@@ -90,6 +90,12 @@
     * [7.1.2.表达式语句](#ExpressionStatements)
   * [7.2.表达式](#Expressions)
       * [7.2.0.1.左值，右值和临时值](#LvaluesRvaluesAndTemporaries)
+      * [7.2.0.2.移动和拷贝类型](#MovedAndCopiedTypes)
+    * [7.2.1.常量表达式](#LiteralExpressions)
+    * [7.2.2.路径表达式](#PathExpressions)
+    * [7.2.3.元组表达式](#TupleExpressions)
+    * [7.2.4.单元表达式](#UnitExpressions)
+    * [7.2.5.结构体表达式](#StructureExpressions)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -1823,3 +1829,53 @@ init : [ '=' ] expr ;
 
 ##### <a name="LvaluesRvaluesAndTemporaries"></a>7.2.0.1.左值，右值和临时值
 表达式可以分为两个主要的分类：*左值*和*右值*。同理在每个表达式中，子表达式是也会出现在*左值上下文*或*右值上下文*中。表达式的计算依赖它自己的分类和它出现的上下文。
+
+一个左值是一个代表了内存位置的表达式。这个表达式是[路径](#PathExpressions)（引用本地变量，函数和方法参数，或静态变量），解引用（`*expr`），[索引表达式](#IndexExpressions)（`expr[expr]`），和[字段引用](#FieldExpressions)（`expr.f`）。所有其它的表达式是右值。
+
+一个[赋值](#AssignmentExpressions)或[复合赋值](#CompoundAssignmentExpressions)表达式的左操作数是一个左值上下文，就像一个单独的单目[借用](#UnaryOperatorExpressions)运算符。所有其它的表达式上下文是右值上下文。
+
+当一个左值在*左值上下文*被计算时，它代表一个内存位置，当在*右值上下文*被计算时，它代表*储存在*那个内存位置的值。
+
+当一个右值用在左值上下文中时，会产生一个临时的未命名的左值并被使用。这个历时量的生命周期等于任何指向它的引用的最长的一个。
+
+##### <a name="MovedAndCopiedTypes"></a>7.2.0.2.移动和拷贝类型
+当一个[局部变量](#MemorySlots)被作为一个[右值](#LvaluesRvaluesAndTemporaries)使用时它要么被移动要么被拷贝，根据它的类型。所有实现了`Copy`的类型被拷贝，所有其它的被移动。
+
+#### <a name="LiteralExpressions"></a>7.2.1.常量表达式
+一个*常量表达式*包含一个我们之前描述过的[常量](#Literals)形式。它直接描述了一个数字，字符，字符串，布尔值，或者单元值。
+
+```rust
+();        // unit type
+"hello";   // string type
+'5';       // character type
+5;         // integer type
+```
+
+#### <a name="PathExpressions"></a>7.2.2.路径表达式
+一个[路径](#Paths)用在表达式上下文中代表一个局部变量或一个项。路径表达式是[左值](#LvaluesRvaluesAndTemporaries)。
+
+#### <a name="TupleExpressions"></a>7.2.3.元组表达式
+元组写作用括号包含的逗号分隔的0个或多个表达式。它们用来创建[元组类型](#TupleTypes)值。
+
+```rust
+(0,);
+(0.0, 4.5);
+("a", 4us, true);
+```
+
+#### <a name="UnitExpressions"></a>7.2.4.单元表达式
+`()`表达式代表一个*单元类型值*，唯一一个类型和值相同名字的类型。
+
+#### <a name="StructureExpressions"></a>7.2.5.结构体表达式
+
+```rust
+struct_expr : expr_path '{' ident ':' expr
+                      [ ',' ident ':' expr ] *
+                      [ ".." expr ] '}' |
+              expr_path '(' expr
+                      [ ',' expr ] * ')' |
+              expr_path ;
+```
+
+这有多种形式的结构体表达式。一个*结构体表达式*包含一个[结构体项](#Structures)的[路径](#Paths)，后跟一个大括号包围的逗号分隔的0个或多个键值对的列表，提供了结构体新实例的字段值。一个字段名字可以是任何标识符，并被一个分号与它的值的表达式分开。有且只有结构体是可变的时结构体字段代表的位置才可以改变。
+

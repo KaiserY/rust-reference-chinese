@@ -96,6 +96,21 @@
     * [7.2.3.元组表达式](#TupleExpressions)
     * [7.2.4.单元表达式](#UnitExpressions)
     * [7.2.5.结构体表达式](#StructureExpressions)
+    * [7.2.6.块表达式](#BlockExpressions)
+    * [7.2.7.方法调用表达式](#MethodCallExpressions)
+    * [7.2.8.字段表达式](#FieldExpressions)
+    * [7.2.9.数组表达式](#ArrayExpressions)
+    * [7.2.10.索引表达式](#IndexExpressions)
+    * [7.2.11.单目运算符表达式](#UnaryOperatorExpressions)
+    * [7.2.12.双目运算符表达式](#BinaryOperatorExpressions)
+      * [7.2.12.1.算术运算符](#ArithmeticOperators)
+      * [7.2.12.2.二进制运算符](#BitwiseOperators)
+      * [7.2.12.3.惰性布尔运算符](#LazyBooleanOperators)
+      * [7.2.12.4.比较运算符](#ComparisonOperators)
+      * [7.2.12.5.类型转换表达式](#TypeCastExpressions)
+      * [7.2.12.6.赋值表达式](#AssignmentExpressions)
+      * [7.2.12.7.复合赋值表达式](#CompoundAssignmentExpressions)
+      * []()
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -1879,3 +1894,204 @@ struct_expr : expr_path '{' ident ':' expr
 
 这有多种形式的结构体表达式。一个*结构体表达式*包含一个[结构体项](#Structures)的[路径](#Paths)，后跟一个大括号包围的逗号分隔的0个或多个键值对的列表，提供了结构体新实例的字段值。一个字段名字可以是任何标识符，并被一个分号与它的值的表达式分开。有且只有结构体是可变的时结构体字段代表的位置才可以改变。
 
+一个*元组结构体表达式*包含一个[结构体项](#Structures)的[路径](#Paths)，后跟一个括号包围的口号分隔的0个或多个表达式的列表（换句话说，结构体表项的路径后跟一个元组表达式）。结构体项必须是一个元组结构体项。
+
+一个*类单元结构体表达式*只包含[结构体项](#Structures)的[路径](#Paths)。
+
+下面是结构体表达式的例子：
+
+```rust
+Point {x: 10.0, y: 20.0};
+TuplePoint(10.0, 20.0);
+let u = game::User {name: "Joe", age: 35, score: 100_000};
+some_fn::<Cookie>(Cookie);
+```
+
+一个结构体表达式组成了一个新的指定名称的结构体类型的值。注意对于一个给定的*类单元*结构体类型，它们总是相同的类型。
+
+可以结构体表达式可以以`..`后跟代表函数更新的表达式的语法来结尾。`..`后面的表达式（`base`）必须与这个新生成的结构体类型相同。整个表达式代表的结果是创建了一个新的结构体（与`base`表达式一样的类型），其中被给出的字段值被显示指定而其它字段的值则由`base`表达式中的值提供。
+
+```rust
+let base = Point3d {x: 1, y: 2, z: 3};
+Point3d {y: 0, z: 10, .. base};
+```
+
+#### <a name="BlockExpressions"></a>7.2.6.块表达式
+
+```
+block_expr : '{' [ stmt ';' | item ] *
+                 [ expr ] '}' ;
+```
+
+一个*块表达式*类似于模块如果这个声明是可能的话。每个块在概念上引入了一个新的命名空间域。`use`项可以向项中引入新的名称而声明的项只在块的作用域之内。
+
+一个块会按顺序执行每一条语句，然后再执行表达式（如果有的话）。如果块以语句结束，它的值是`()`：
+
+```rust
+let x: () = { println!("Hello."); };
+```
+
+如果它以表达式结束，它的值和类型都是表达式的：
+
+```rust
+let x: i32 = { println!("Hello."); 5 };
+
+assert_eq!(5, x);
+```
+
+#### <a name="MethodCallExpressions"></a>7.2.7.方法调用表达式
+
+```
+method_call_expr : expr '.' ident paren_expr_list ;
+```
+
+一个*方法调用*包含应给表达式后跟一个单独的点，一个标识符，和括号包围的表达式列表。方法调用被解析为特定特性上的方法，要么静态分发给一个函数，如果左边的`self`的类型是明确知道的；要么动态分发，如果左侧表达式是一个间接的[对象类型](#ObjectTypes)。
+
+#### <a name="FieldExpressions"></a>7.2.8.字段表达式
+
+```
+field_expr : expr '.' ident ;
+```
+
+一个*字段表达式*包含一个表达式后跟一个单独的点和一个标识符，不过不直接后跟一个括号包围的表达式列表（后者是[方法调用表达式](#MethodCallExpressions)）。一个字段表达式代表[结构体](#StructureTypes)的一个字段。
+
+```
+mystruct.myfield;
+foo().x;
+(Struct {a: 10, b: 20}).a;
+```
+
+一个字段访问是一个引用字段值的[左值](#LvaluesRvaluesAndTemporaries)。当字段的类型是可变的，它可以被[赋值](#AssignmentExpressions)。
+
+另外，如果表达式点左边的类型是一个指针的话，它会自动解引用来使访问字段变得可能。
+
+#### <a name="ArrayExpressions"></a>7.2.9.数组表达式
+
+```
+array_expr : '[' "mut" ? array_elems? ']' ;
+
+array_elems : [expr [',' expr]*] | [expr ';' expr] ;
+```
+
+一个[数组](#ArrayAndSliceTypes)表达式写作方括号包围的逗号分隔的0个或多个相同类型的表达式。
+
+在`[expr ';' expr]`的形式中，`';'`之后的表达式必须是可以在编译时评估的常量表达式，例如[常量](#Literals)或[静态项](#StaticItems)。
+
+```rust
+[1, 2, 3, 4];
+["a", "b", "c", "d"];
+[0; 128];              // array with 128 zeros
+[0u8, 0u8, 0u8, 0u8];
+```
+
+#### <a name="IndexExpressions"></a>7.2.10.索引表达式
+
+```
+idx_expr : expr '[' expr ']' ;
+```
+
+[数组](#ArrayAndSliceTypes)类型表达式可以在后面写一个方括号包围的表达式来进行索引。当数组是可变的，结果的[左值](#LvaluesRvaluesAndTemporaries)可以被赋值。
+
+索引是从0开始的，并且可以是任何整数类型。向量的访问在运行时进行边界检查。当这个检查失败时，它会将这个线程设置为*恐慌状态*。
+
+```rust
+([1, 2, 3, 4])[0];
+(["a", "b"])[10]; // panics
+```
+
+#### <a name="UnaryOperatorExpressions"></a>7.2.11.单目运算符表达式
+Rust定义了3个单目运算符。它们都写作前缀运算符，写在它们适用的表达式之后。
+
+* `-`：取反。只能用于数字类型
+* `*`：解引用。当作用于一个[指针](#PointerTypes)时它代表指针指向的位置。对于可变位置的指针，结果的[左值](#LvaluesRvaluesAndTemporaries)可以被赋值。对于非指针类型，它调用`std::ops::Deref`特性的`deref`方法，或者`std::ops::DerefMut`特性的`deref_mut`方法（如果它被类型实现了并且要求外层表达式将会或可能使解引用可变），并且产生一个从重载方法返回的解引用的`&`或`&mut`借用的指针作为结果
+* `!`：逻辑取反。对于布尔类型，它在`true`和`false`之间切换。对于整形类型，它反转值的补码表示的每个单独的位
+
+#### <a name="BinaryOperatorExpressions"></a>7.2.12.双目运算符表达式
+
+```
+binop_expr : expr binop expr ;
+```
+
+双目运算符按照[运算符优先级](#OperatorPrecedence)给出。
+
+##### <a name="ArithmeticOperators"></a>7.2.12.1.算术运算符
+双目运算符是调用内部特性的语法糖，定义在`std`库的`std::ops`模块中。这意味着算术运算符可以被用户定义类型重写。对于标准类型的运算符的默认意义提供如下。
+
+* `+`：加法和数组/字符串连接。调用`std::ops::Add`特性的`add`方法
+* `-`：减法。调用`std::ops::Sub`特性的`sub`方法
+* `*`：乘法。调用`std::ops::Mul`特性的`mul`方法
+* `/`：除法。调用`std::ops::Div`特性的`div`方法
+* `%`：取余。调用`std::ops::Rem`特性的`rem`方法
+
+##### <a name="BitwiseOperators"></a>7.2.12.2.二进制运算符
+就像[算术运算符](#ArithmeticOperators)，二进制运算符是调用内部特性的语法糖。这意味着二进制运算符可以被用户定义类型重写。对于标准类型的运算符的默认意义提供如下。
+
+* `&`：和。调用`std::ops::BitAnd`特性的`bitand`方法
+* `|`：或。调用`std::ops::BitOr`特性的`bitor`方法
+* `^`：异或。调用`std::ops::BitXor`特性的`bitxor`方法
+* `<<`：左移。调用`std::ops::Shl`特性的`shl`方法
+* `>>`：右移。调用`std::ops::Shr`特性的`shr`方法
+
+##### <a name="LazyBooleanOperators"></a>7.2.12.3.惰性布尔运算符
+`||`和`&&`可以作用于布尔类型的操作数。`||`操作符代表逻辑“或”，而`&&`操作符代表逻辑“和”。它们与`|`和`&`不同的地方在于右侧的操作数只在左侧操作数不能确定表达式结果时才被计算。这就是说，`||`只在左操作数计算为`false`时计算右操作数，而`&&`只在计算为`true`的时候。
+
+##### <a name="ComparisonOperators"></a>7.2.12.4.比较运算符
+比较运算符，就像[算术运算符](#ArithmeticOperators)，和[二进制运算符](#BitwiseOperators)，是调用内部特性的语法糖。这意味着比较运算符可以被用户定义类型重写。对于标准类型的运算符的默认意义提供如下。
+
+* `==`：等于。调用`std::ops::Shr`特性的`shr`方法
+* `!=`：不等于。调用`std::ops::Shr`特性的`shr`方法
+* `<`：小于。调用`std::ops::Shr`特性的`shr`方法
+* `>`：大于。调用`std::ops::Shr`特性的`shr`方法
+* `<=`：小于等于。调用`std::ops::Shr`特性的`shr`方法
+* `>=`：大于等于。调用`std::ops::Shr`特性的`shr`方法
+
+##### <a name="TypeCastExpressions"></a>7.2.12.5.类型转换表达式
+
+一个类型转换表达式表现为双目运算符`as`。
+
+执行`as`表达式将左侧的值转换为右侧的类型。
+
+一个`as`表达式的例子：
+
+```rsut
+fn avg(v: &[f64]) -> f64 {
+  let sum: f64 = sum(v);
+  let sz: f64 = len(v) as f64;
+  return sum / sz;
+}
+```
+
+##### <a name="AssignmentExpressions"></a>7.2.12.6.赋值表达式
+一个*赋值表达式*包含一个[左值](#LvaluesRvaluesAndTemporaries)表达式后跟一个等号（`=`）和一个[右值](#LvaluesRvaluesAndTemporaries)表达式。
+
+计算一个赋值表达式[拷贝或移动](#MovedAndCopiedTypes)右侧操作数到左侧操作数。
+
+```rust
+x = y;
+```
+
+##### <a name="CompoundAssignmentExpressions"></a>7.2.12.7.复合赋值表达式
+`+`，`-`，`*`，`/`，`%`，`|`，`^`，`<<`和`>>`运算符可以与`=`运算符复合。`lval OP= val`表达式等同于`lval = lval OP val`运算符。例如`x = x + 1`可以写成`x += 1`。
+
+任何这样的表达式总是[单元](#PrimitiveTypes)类型
+
+##### <a name="OperatorPrecedence"></a>7.2.12.8.运算符优先级
+Rust双目运算符优先级顺序如下，从强到弱降序：
+
+```rust
+as
+* / %
++ -
+<< >>
+&
+^
+|
+== != < > <= >=
+&&
+||
+= ..
+```
+
+相同优先级的运算符从左到右顺序计算。同级的[单目运算符](#UnaryOperatorExpressions)强于任何双目运算符。
+
+#### <a name="GroupedExpressions"></a>7.2.13.组合表达式

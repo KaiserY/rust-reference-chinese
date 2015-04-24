@@ -110,7 +110,11 @@
       * [7.2.12.5.类型转换表达式](#TypeCastExpressions)
       * [7.2.12.6.赋值表达式](#AssignmentExpressions)
       * [7.2.12.7.复合赋值表达式](#CompoundAssignmentExpressions)
-      * []()
+      * [7.2.12.8.运算符优先级](#OperatorPrecedence)
+    * [7.2.13.组合表达式](#GroupedExpressions)
+    * [7.2.14.调用表达式](#CallExpressions)
+    * [7.2.15.Lambda表达式](#7.2.15.Lambda表达式)
+    * [7.2.16.While循环](#WhileLoops)
 
 ## <a name="Introduction"></a>1.介绍
 本文档是Rust编程语言的主要参考。它提供3种类型的材料：
@@ -2137,4 +2141,37 @@ lambda_expr : '|' ident_list '|' expr ;
 
 lambda表达式在向其它函数传递函数作为参数时最有用，作为一个定义和捕获函数的简写。
 
-特别的，lambda表达式*捕获它所处的环境*，而正规的[函数定义](#Functions)则不行。
+特别的，lambda表达式*捕获它所处的环境*，而正规的[函数定义](#Functions)则不行。捕捉到的类型依赖lambda表达式推断的[函数类型](#FunctionTypes)。对于最简单和最廉价形式（类似于一个`|| { }`表达式），lambda表达式通过引用捕获它的环境，有效的借用所有在函数中提到的外部变量。另外，编译器可能会推断一个lambda表达式应该从它的环境拷贝或移动值到它捕获的环境。
+
+在这个例子中，我们定义了一个`ten_times`函数，它获取一个高层次的函数作为参数，并用一个作为参数的lambda表达式来调用它：
+
+```rust
+fn ten_times<F>(f: F) where F: Fn(i32) {
+    let mut i = 0i32;
+    while i < 10 {
+        f(i);
+        i += 1;
+    }
+}
+
+ten_times(|j| println!("hello, {}", j));
+```
+
+#### <a name="WhileLoops"></a>7.2.16.While循环
+
+```
+while_expr : [ lifetime ':' ] "while" no_struct_literal_expr '{' block '}' ;
+```
+
+一个`while`循环以计算布尔循环条件表达式开始。如果循环条件表达式值为`true`，循环体执行并将控制返回给循环条件表达式。如果循环条件表达式值为`false`，`while`表达式结束。
+
+一个栗子：
+
+```rust
+let mut i = 0;
+
+while i < 10 {
+    println!("hello");
+    i = i + 1;
+}
+```

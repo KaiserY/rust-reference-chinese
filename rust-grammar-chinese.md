@@ -82,3 +82,42 @@ block_comment_body : [block_comment | character] * ;
 line_comment : "//" non_eol * ;
 ```
 
+### <a name="Whitespace"></a>3.4.空白
+
+```
+whitespace_char : '\x20' | '\x09' | '\x0a' | '\x0d' ;
+whitespace : [ whitespace_char | comment ] + ;
+```
+
+### <a name="Tokens"></a>3.5.记号
+
+```
+simple_token : keyword | unop | binop ;
+token : simple_token | ident | literal | symbol | whitespace token ;
+```
+
+#### <a name="Keywords"></a>3.5.1.关键字
+
+|   |  |  |  |  |
+| ------------- | ------------- | ------------- | ------------- | ------------- |
+| abstract  | alignof  | as  | become  | box  |
+| break  | const  | continue  | crate  | do  |
+| else  | enum  | extern  | false  | final  |
+| fn  | for  | if  | impl  | in  |
+| let  | loop  | macro  | match  | mod  |
+| move  | mut  | offsetof  | override  | priv  |
+| pub  | pure  | ref  | return  | sizeof  |
+| static  | self  | struct  | super  | true  |
+| trait  | type  | typeof  | unsafe  | unsized  |
+| use  | virtual  | where  | while  | yield  |
+
+每个这些关键字在语法中有特殊含义，并且它们都排除`ident`规则之外。
+
+#### <a name="Literals"></a>3.5.2.常量
+
+```
+lit_suffix : ident;
+literal : [ string_lit | char_lit | byte_string_lit | byte_lit | num_lit ] lit_suffix ?;
+```
+
+可选的后缀只对特定数字常量有效，不过它被未来的扩展保留，也就是说，上述给出了词法语法，不过Rust解析器会拒绝除了下面[数字常量](#NumberLiterals)中提到的12种特殊情况外的一切形式。

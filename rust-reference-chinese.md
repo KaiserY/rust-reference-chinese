@@ -130,10 +130,10 @@
 ## <a name="Notation"></a>2.标记法
 
 ### <a name="UnicodeProductions"></a>2.1.Unicode组合
-一些Rust语法中的组合允许Unicode代码点超越ASCII范围。我们根据Unicode标准指定的字符属性定义这些组合，而不是采用ASCII范围的代码点。[特殊Unicode组合](#UnicodeProductions)部分列出了这些组合。
+一些Rust语法中的组合允许Unicode代码点超越ASCII范围。我们根据Unicode标准指定的字符属性定义这些组合，而不是采用ASCII范围的代码点。语法文档中有一个[特殊Unicode组合](https://doc.rust-lang.org/stable/grammar.html#special-unicode-productions)部分列出了这些组合。
 
 ### <a name="StringTableProductions"></a>2.2.字符串表组合
-语法中的一些规则 - 特别的像[单目运算符](http://doc.rust-lang.org/reference.html#unary-operator-expressions)，[双目运算符](http://doc.rust-lang.org/reference.html#binary-operator-expressions)和[关键字](http://doc.rust-lang.org/reference.html#keywords) - 表现为一种简单的形式：作为一串非引用，可打印的空白分隔的字符串表。这些例子是[记号](#Tokens)规则的子集，并假设为编译器的词法分析的结果，由一个DFA（确定有限状态自动机）驱动，通过分离所有这些字符串表入口执行。
+语法中的一些规则 - 特别的像[单目运算符](#UnaryOperatorExpressions)，[双目运算符](BinaryOperatorExpressions)和[关键字](https://doc.rust-lang.org/stable/grammar.html#keywords) - 表现为一种简单的形式：作为一串非引用，可打印的空白分隔的字符串表。这些例子是[记号](#Tokens)规则的子集，并假设为编译器的词法分析的结果，由一个DFA（确定有限状态自动机）驱动，通过分离所有这些字符串表入口执行。
 
 当语法中出现一个在双引号（`"`）中的字符串时，它是字符串表组合中的一个单独成员的隐式引用。查看[记号](#Tokens)以获取更多信息。
 
@@ -142,10 +142,7 @@
 ### <a name="InputFormat"></a>3.1.输入格式
 Rust的输入被解释为一串UTF-8编码的Unicode代码点。大部分Rust语法规则根据ASCII范围的代码点定义，不过一小部分根据Unicode属性或显示代码点列表定义。<sup>[1](#Fn1)</sup>
 
-### <a name="SpecialUnicodeProduction"></a>3.2.特殊Unicode组合
-Rust语法中的如下这些组合根据Unicode属性定义：`ident`，`non_null`，`non_star`，`non_eol`，`non_slash_or_star`，`non_single_quote`和`non_double_quote`。
-
-#### <a name="Identifiers"></a>3.2.标识符
+### <a name="Identifiers"></a>3.2.标识符
 一个标识符是如下形式的任何非空Unicode字符串<sup>[2](#Fn2)</sup>：
 
 * 第一个字符拥有`XID_start`属性
@@ -181,38 +178,12 @@ Rust程序中如果每个空白元素被替换任何其它空格元素时它们�
 
 记号是语法中的主要组合，使用正则（非递归）语言定义。“简单”记号采用[字符串表组合](#StringTableProductions)形式，并作为双引号引用的字符串出现在剩下的语法中。其它记号则有确定的规则。
 
-#### <a name="Keywords"></a>3.5.1.关键字
-
-|   |  |  |  |  |
-| ------------- | ------------- | ------------- | ------------- | ------------- |
-| abstract  | alignof  | as  | become  | box  |
-| break  | const  | continue  | crate  | do  |
-| else  | enum  | extern  | false  | final  |
-| fn  | for  | if  | impl  | in  |
-| let  | loop  | macro  | match  | mod  |
-| move  | mut  | offsetof  | override  | priv  |
-| pub  | pure  | ref  | return  | sizeof  |
-| static  | self  | struct  | super  | true  |
-| trait  | type  | typeof  | unsafe  | unsized  |
-| use  | virtual  | where  | while  | yield  |
-
-每个这些关键字在语法中有特殊含义，并且它们都排除`ident`规则之外。
-
-注意有些关键字是保留的，现在并没有意义。
-
-#### <a name="Literals"></a>3.5.2.常量
+#### <a name="Literals"></a>3.5.1.常量
 常量是一个包含单独记号的表达式，而不是一串记号，它立即而直接的代表了它所赋的值，而不是通过名字引用或其它赋值规则。常量是一种形式的常表达式，所以它（主要）在编译时赋值。
 
-```
-lit_suffix : ident;
-literal : [ string_lit | char_lit | byte_string_lit | byte_lit | num_lit ] lit_suffix ?;
-```
+##### <a name="Examples"></a>3.5.1.1.例子
 
-可选的后缀只对特定数字常量有效，不过它被未来的扩展保留，也就是说，上述给出了词法语法，不过Rust解析器会拒绝除了下面[数字常量](#NumberLiterals)中提到的12种特殊情况外的一切形式。
-
-##### <a name="Examples"></a>3.5.2.1.例子
-
-###### <a name="CharactersAndStrings"></a>3.5.2.1.1.字符和字符串
+###### <a name="CharactersAndStrings"></a>3.5.1.1.1.字符和字符串
 
 |  | 例子 | `#`集合 | 字符集 | 转义 |
 | ------------- | ------------- | ------------- | ------------- | ------------- |
@@ -223,7 +194,7 @@ literal : [ string_lit | char_lit | byte_string_lit | byte_lit | num_lit ] lit_s
 |[字节字符串](#ByteStringLiterals)|`b"hello"`|`N/A`|所有ASCII|`\“`和[字节](#ByteEscapes)|
 |[原始字节字符串](#RawByteStringLiterals)|`br#"hello"#`|`0...`|所有ASCII|`N/A`|
 
-####### <a name="ByteEscapes"></a>3.5.2.1.2.字节转义
+####### <a name="ByteEscapes"></a>3.5.1.1.2.字节转义
 
 || 名称 |
 | -------- | ---------------------- |
@@ -233,13 +204,13 @@ literal : [ string_lit | char_lit | byte_string_lit | byte_lit | num_lit ] lit_s
 |`\t`|制表符|
 |`\\`|反斜线|
 
-###### <a name="UnicodeEscapes"></a>3.5.2.1.3.Unicode转义
+###### <a name="UnicodeEscapes"></a>3.5.1.1.3.Unicode转义
 
 || 名称 |
 | -------- | ---------------------- |
 |`\u{7FFF}`|24位Unicode字符编码（最多6个数字）|
 
-###### <a name="Numbers"></a>3.5.2.1.4.数字
+###### <a name="Numbers"></a>3.5.1.1.4.数字
 
 | [数字常量](#NumberLiterals)`*` | 例子 | 幂 | 后缀 |
 | ------------- | ------------- | ------------- | ------------- |
@@ -251,13 +222,13 @@ literal : [ string_lit | char_lit | byte_string_lit | byte_lit | num_lit ] lit_s
 
 `*`所有数字常量允许`_`作为可视分隔符：`1_234.0E+18f64`
 
-###### <a name="Suffixes"></a>3.5.2.1.5.后缀
+###### <a name="Suffixes"></a>3.5.1.1.5.后缀
 
 | 整数 | 浮点数 |
 | ---------------- | ------------- |
 |`u8`，`i8`，`u16`，`i16`，`u32`，`i32`，`u64`，`i64`，`is`（`isize`），`us`（`usize`）|`f32`，`f64`|
 
-##### <a name="CharacterAndStringLiterals"></a>3.5.2.2.字符和字符串常量
+##### <a name="CharacterAndStringLiterals"></a>3.5.1.2.字符和字符串常量
 
 ```
 char_lit : '\x27' char_body '\x27' ;

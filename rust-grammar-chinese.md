@@ -121,3 +121,127 @@ literal : [ string_lit | char_lit | byte_string_lit | byte_lit | num_lit ] lit_s
 ```
 
 可选的后缀只对特定数字常量有效，不过它被未来的扩展保留，也就是说，上述给出了词法语法，不过Rust解析器会拒绝除了下面[数字常量](#NumberLiterals)中提到的12种特殊情况外的一切形式。
+
+##### <a name="CharacterAndStringLiterals"></a>3.5.2.1.字符和字符串常量
+
+```
+char_lit : '\x27' char_body '\x27' ;
+string_lit : '"' string_body * '"' | 'r' raw_string ;
+
+char_body : non_single_quote
+          | '\x5c' [ '\x27' | common_escape | unicode_escape ] ;
+
+string_body : non_double_quote
+            | '\x5c' [ '\x22' | common_escape | unicode_escape ] ;
+raw_string : '"' raw_string_body '"' | '#' raw_string '#' ;
+
+common_escape : '\x5c'
+              | 'n' | 'r' | 't' | '0'
+              | 'x' hex_digit 2
+unicode_escape : 'u' '{' hex_digit+ 6 '}';
+
+hex_digit : 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
+          | 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
+          | dec_digit ;
+oct_digit : '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' ;
+dec_digit : '0' | nonzero_dec ;
+nonzero_dec: '1' | '2' | '3' | '4'
+           | '5' | '6' | '7' | '8' | '9' ;
+```
+
+##### <a name="ByteAndByteStringLiterals"></a>3.5.2.2.字节和字节字符串常量
+
+```
+byte_lit : "b\x27" byte_body '\x27' ;
+byte_string_lit : "b\x22" string_body * '\x22' | "br" raw_byte_string ;
+
+byte_body : ascii_non_single_quote
+          | '\x5c' [ '\x27' | common_escape ] ;
+
+byte_string_body : ascii_non_double_quote
+            | '\x5c' [ '\x22' | common_escape ] ;
+raw_byte_string : '"' raw_byte_string_body '"' | '#' raw_byte_string '#' ;
+```
+
+##### <a name="NumberLiterals"></a>3.5.2.3.数字常量
+
+```
+num_lit : nonzero_dec [ dec_digit | '_' ] * float_suffix ?
+        | '0' [       [ dec_digit | '_' ] * float_suffix ?
+              | 'b'   [ '1' | '0' | '_' ] +
+              | 'o'   [ oct_digit | '_' ] +
+              | 'x'   [ hex_digit | '_' ] +  ] ;
+
+float_suffix : [ exponent | '.' dec_lit exponent ? ] ? ;
+
+exponent : ['E' | 'e'] ['-' | '+' ] ? dec_lit ;
+dec_lit : [ dec_digit | '_' ] + ;
+```
+
+##### <a name="BooleanLiterals"></a>3.5.2.4.布尔常量
+
+```
+bool_lit : [ "true" | "false" ] ;
+```
+
+布尔类型两个值写作`true`和`false`
+
+#### <a name="Symbols"></a>3.5.3.符号
+
+```
+symbol : "::" | "->"
+       | '#' | '[' | ']' | '(' | ')' | '{' | '}'
+       | ',' | ';' ;
+```
+
+符号是一种通用的可打印[记号](#Tokens)，它在各种语法组合中起到了结构作用。在这里罗列出它们是为了保持除了出现在[单目运算符](#UnaryOperatorExpressions)，[双目运算法](#BinaryOperatorExpressions)或[关键字](#Keywords)中的记号以外的各种各样的可打印记号集合的完整性。
+
+### <a name="Paths"></a>3.6.路径
+
+```
+expr_path : [ "::" ] ident [ "::" expr_path_tail ] + ;
+expr_path_tail : '<' type_expr [ ',' type_expr ] + '>'
+               | expr_path ;
+
+type_path : ident [ type_path_tail ] + ;
+type_path_tail : '<' type_expr [ ',' type_expr ] + '>'
+               | "::" type_path ;
+```
+
+## <a name="SyntaxExtensions"></a>4.语法扩展
+
+### <a name="Macros"></a>4.1.宏
+
+```
+expr_macro_rules : "macro_rules" '!' ident '(' macro_rule * ')' ;
+macro_rule : '(' matcher * ')' "=>" '(' transcriber * ')' ';' ;
+matcher : '(' matcher * ')' | '[' matcher * ']'
+        | '{' matcher * '}' | '$' ident ':' ident
+        | '$' '(' matcher * ')' sep_token? [ '*' | '+' ]
+        | non_special_token ;
+transcriber : '(' transcriber * ')' | '[' transcriber * ']'
+            | '{' transcriber * '}' | '$' ident
+            | '$' '(' transcriber * ')' sep_token? [ '*' | '+' ]
+            | non_special_token ;
+```
+
+## <a name="CratesAndSourceFiles"></a>5.包装箱和源文件
+
+## <a name="ItemsAndAttributes"></a>6.项和属性
+
+### <a name="Items"></a>6.1.项
+
+```
+item : vis ? mod_item | fn_item | type_item | struct_item | enum_item
+     | const_item | static_item | trait_item | impl_item | extern_block ;
+```
+
+#### <a name="TypeParameters"></a>6.1.1.类型参数
+
+#### <a name="Modules"></a>6.1.2.模块
+
+```
+mod_item : "mod" ident ( ';' | '{' mod '}' );
+mod : [ view_item | item ] * ;
+```
+

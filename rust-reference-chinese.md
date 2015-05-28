@@ -230,36 +230,10 @@ Rust程序中如果每个空白元素被替换任何其它空格元素时它们�
 
 ##### <a name="CharacterAndStringLiterals"></a>3.5.1.2.字符和字符串常量
 
-```
-char_lit : '\x27' char_body '\x27' ;
-string_lit : '"' string_body * '"' | 'r' raw_string ;
-
-char_body : non_single_quote
-          | '\x5c' [ '\x27' | common_escape | unicode_escape ] ;
-
-string_body : non_double_quote
-            | '\x5c' [ '\x22' | common_escape | unicode_escape ] ;
-raw_string : '"' raw_string_body '"' | '#' raw_string '#' ;
-
-common_escape : '\x5c'
-              | 'n' | 'r' | 't' | '0'
-              | 'x' hex_digit 2
-
-unicode_escape : 'u' '{' hex_digit+ 6 '}';
-
-hex_digit : 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
-          | 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
-          | dec_digit ;
-oct_digit : '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' ;
-dec_digit : '0' | nonzero_dec ;
-nonzero_dec: '1' | '2' | '3' | '4'
-           | '5' | '6' | '7' | '8' | '9' ;
-```
-
-###### <a name="CharacterLiterals"></a>3.5.2.2.1.字符常量
+###### <a name="CharacterLiterals"></a>3.5.1.2.1.字符常量
 一个*字符常量*是一个在两个`U+0027`（单引号）字符中的单个Unicode字符，当它是`U+0027`自身的时候，它必须前跟一个`U+005C`字符（`\`）*转义*。
 
-###### <a name="StringLiterals"></a>3.5.2.2.2.字符串常量
+###### <a name="StringLiterals"></a>3.5.1.2.2.字符串常量
 一个*字符串常量*是一串在两个`U+0022`（双引号）字符中的任意Unicode字符，当字符是`U+0022`自身的时候，它必须前跟一个`U+005C`字符（`\`）*转义*，或者使用*原始字符串常量*。
 
 多行字符串常量可以通过在换行之前前跟一个`U+005C`字符（`\`）来结束每一行来定义。这回导致`U+005C`字符，换行符和所有下一行开头的空白都被忽略。
@@ -272,7 +246,7 @@ let b = "foo\
 assert_eq!(a,b);
 ```
 
-###### <a name="CharacterEscapes"></a>3.5.2.2.3.字符转义
+###### <a name="CharacterEscapes"></a>3.5.1.2.3.字符转义
 不管字符还是非原始字符串常量都提供了一些额外的*转义*。一个转义以一个`U+005C`（`\`）开始并后跟如下一种形式：
 
 * 一个*8位代码点转义*以`U+0078`（`x`）开头后跟正好两位*十六进制数*。它代表等于它提供的十六进制值的Unicode代码点
@@ -280,7 +254,7 @@ assert_eq!(a,b);
 * 一个*空白转义*是字符`U+006E`（`n`），`U+0072`（`r`）或`U+0074`（`t`）中的一个，分别代表Unicode值`U+000A`（`LF`），`U+000D`（`CR`）或`U+0009`（`HT`）
 * *反斜杠转义*是字符`U+005C`（`\`），它必须转义才能代表*自己*。
 
-###### <a name="RawStringLiterals"></a>3.5.2.2.4.原始字符串常量
+###### <a name="RawStringLiterals"></a>3.5.1.2.4.原始字符串常量
 原始字符串常量并不进行任何转义。它以字符`U+0072`（`r`）后跟0个或多个字符`U+0023`（`#`）和一个`U+0022`（双引号）字符开头。*原始字符串体*并不由上面的EBNF语法定义：它可以包含任意Unicode字符序列并以另一个`U+0022`（双引号）字符结尾，后跟与开始`U+0022`（双引号）字符前跟的相同数量的`U+0023`（`#`）字符。
 
 原始字符串体包含的所有Unicode字符代表它自己，`U+0022`（双引号）（当后跟0个或多个`U+0023`（`#`）字符用来开始原始字符串常量时除外）或`U+005C`（`\`）并没有特殊含义。
@@ -298,24 +272,12 @@ r##"foo #"# bar"##;                // foo #"# bar
 "\\x52"; r"\x52";                  // \x52
 ```
 
-##### <a name="ByteAndByteStringLiterals"></a>3.5.2.3.字节和字节字符串常量
+##### <a name="ByteAndByteStringLiterals"></a>3.5.1.3.字节和字节字符串常量
 
-```
-byte_lit : "b\x27" byte_body '\x27' ;
-byte_string_lit : "b\x22" string_body * '\x22' | "br" raw_byte_string ;
-
-byte_body : ascii_non_single_quote
-          | '\x5c' [ '\x27' | common_escape ] ;
-
-byte_string_body : ascii_non_double_quote
-            | '\x5c' [ '\x22' | common_escape ] ;
-raw_byte_string : '"' raw_byte_string_body '"' | '#' raw_byte_string '#' ;
-```
-
-###### <a name="ByteLiterals"></a>3.5.2.3.1.字节常量
+###### <a name="ByteLiterals"></a>3.5.1.3.1.字节常量
 一个*字节常量*是一个位于两个`U+0027`（单引号）字符中的一个单独ASCII字符（在`U+0000`到`U+007F`范围中），除了`U+0027`自己，它需要前跟`U+005C`（`\`）*转义*，或者一个单独的*转义字符*。它等于一个`u8`8位无符号整形*数字常量*。
 
-###### <a name="ByteStringLiterals"></a>3.5.2.3.2.字节字符串常量
+###### <a name="ByteStringLiterals"></a>3.5.1.3.2.字节字符串常量
 一个非原始*字节字符串常量*是一串ASCII字符和*转义符*，前跟`U+0062`（`b`）和`U+0022`（双引号），然后以`U+0022`结尾。如果`U+0022`出现常量中，它前跟`U+005C`（`\`）转义。又或者，一个字节字符串常量可以是一个*原始字节字符串常量*，如下定义。一个字节字符串常量等同于一个`&'static [u8]0`借用的8位无符号整形数组。
 
 一些额外的*转义*可以在字节或非原始字节字符串常量中使用。一个转义以`U+005C`（`\`）开始并后跟如下一种形式：
@@ -324,7 +286,7 @@ raw_byte_string : '"' raw_byte_string_body '"' | '#' raw_byte_string '#' ;
 * 一个*空白转义*是字符`U+006E`（`n`），`U+0072`（`r`）或`U+0074`（`t`）中的一个，分别代表Unicode值`U+000A`（`LF`），`U+000D`（`CR`）或`U+0009`（`HT`）
 * 一个*反斜杠转义*是`U+005C`（`\`）字符，它必须被转义以代表ASCII编码的`0x5C`
 
-###### <a name="RawByteStringLiterals"></a>3.5.2.3.3.原始字节字符串常量
+###### <a name="RawByteStringLiterals"></a>3.5.1.3.3.原始字节字符串常量
 
 原始字节字符串常量并不进行任何转义。它们以`U+0062`（`b`）开头，后跟`U+0072`（`r`）,后跟0个或多个`U+0023`（`#`），和一个`U+0022`（双引号）。*原始字符串体*并不由上述EBNF语法定义：它可以包含任何ASCII字符序列并以另一个`U+0022`（双引用）结束，后跟与开头`U+0022`（双引号）之前相同数量的`U+0023`（`#`）。一个原始字节字符串常量不能包含非ASCII字节。
 
@@ -343,24 +305,11 @@ b"\x52"; b"R"; br"R";                // R
 b"\\x52"; br"\x52";                  // \x52
 ```
 
-##### <a name="NumberLiterals"></a>3.5.2.4.数字常量
-
-```
-num_lit : nonzero_dec [ dec_digit | '_' ] * float_suffix ?
-        | '0' [       [ dec_digit | '_' ] * float_suffix ?
-              | 'b'   [ '1' | '0' | '_' ] +
-              | 'o'   [ oct_digit | '_' ] +
-              | 'x'   [ hex_digit | '_' ] +  ] ;
-
-float_suffix : [ exponent | '.' dec_lit exponent ? ] ? ;
-
-exponent : ['E' | 'e'] ['-' | '+' ] ? dec_lit ;
-dec_lit : [ dec_digit | '_' ] + ;
-```
+##### <a name="NumberLiterals"></a>3.5.1.4.数字常量
 
 一个*数字常量*是一个*整形常量*或者一个*浮点数常量*。识别这两种常量的语法是混合的。
 
-###### <a name="IntegerLiterals"></a>3.5.2.4.1.整形常量
+###### <a name="IntegerLiterals"></a>3.5.1.4.1.整形常量
 
 一个*整形常量*有下述4种形式中的一种：
 
@@ -385,11 +334,13 @@ dec_lit : [ dec_digit | '_' ] + ;
 0usize;                            // type usize
 ```
 
-###### <a name="FloatingPointLiterals"></a>3.5.2.4.2.浮点常量
+###### <a name="FloatingPointLiterals"></a>3.5.1.4.2.浮点常量
 一个浮点常量有如下两种形式的一种：
 
 * 一个*十进制常量*后跟一个句号字符`U+002E`（`.`）。它可以后跟另一个十进制常量，和一个可选的*指数*
 * 一个单独的*十进制常量*后跟一个*指数*
+
+就像整形常量，一个浮点常量也可后跟一个后缀，只要后缀之前部分不以`U+002E`（`.`）结尾。后缀强制设定了常量的类型。
 
 默认，一个浮点常量是泛型类型，也就是说，类似整形常量，它的类型必须在上下文中唯一确定。这里有两种有效的*浮点后缀*，`f32`和`f64`（32位和64位浮点类型），它们显式的确定了常量的类型。
 
@@ -407,18 +358,12 @@ let x: f64 = 2.; // type f64
 
 浮点数所代表的语义在[机器类型](#MachineTypes)中描述。
 
-##### <a name="BooleanLiterals"></a>3.5.2.5.布尔常量
-不二类型的两个值写做`true`和`false`。
+##### <a name="BooleanLiterals"></a>3.5.1.5.布尔常量
+布尔类型的两个值写做`true`和`false`。
 
-#### <a name="Symbols"></a>3.5.3.符号
+#### <a name="Symbols"></a>3.5.2.符号
 
-```
-symbol : "::" | "->"
-       | '#' | '[' | ']' | '(' | ')' | '{' | '}'
-       | ',' | ';' ;
-```
-
-符号是一种通用的可打印[记号](#Tokens)，它在各种语法组合中起到了结构作用。在这里列出它们是为了除了出现在[单目运算符](#UnaryOperatorExpressions)，[双目运算法](#BinaryOperatorExpressions)或[关键字](#Keywords)中的以外的各种各样的可打印记号集合的完整性。
+符号是一种通用的可打印[记号](#Tokens)，它在各种语法组合中起到了结构作用。在这里罗列出它们是为了保持除了出现在[单目运算符](#UnaryOperatorExpressions)，[双目运算法](#BinaryOperatorExpressions)或[关键字](#Keywords)中的记号以外的各种各样的可打印记号集合的完整性。
 
 ### <a name="Paths"></a>3.6.路径
 
